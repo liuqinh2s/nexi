@@ -11,22 +11,42 @@ function walk(directory) {
   });
 }
 
-function targetFile(href) {
+function targetFiles(href) {
   let pathname = href.split("#")[0].split("?")[0];
   if (!pathname || /^(https?:|mailto:|tel:|javascript:)/.test(pathname)) return null;
   if (basePath && pathname.startsWith(basePath)) pathname = pathname.slice(basePath.length) || "/";
-  pathname = decodeURIComponent(pathname);
   if (!pathname.startsWith("/")) return null;
-  if (pathname.endsWith("/")) return path.join(outputDirectory, pathname, "index.html");
-  return path.join(outputDirectory, pathname);
+
+  let decodedPathname;
+  try {
+    decodedPathname = decodeURIComponent(pathname);
+  } catch {
+    decodedPathname = pathname;
+  }
+
+  // Next's static export uses URL-encoded directory names for dynamic route
+  // params, while static routes (such as tag pages) may retain Unicode names.
+  // Check both forms so the validation follows the browser's URL resolution.
+  const encodedPathname = decodedPathname
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+
+  return [...new Set([pathname, decodedPathname, encodedPathname])].map((candidate) =>
+    candidate.endsWith("/")
+      ? path.join(outputDirectory, candidate, "index.html")
+      : path.join(outputDirectory, candidate),
+  );
 }
 
 const failures = [];
 for (const htmlFile of walk(outputDirectory).filter((file) => file.endsWith(".html"))) {
   const html = fs.readFileSync(htmlFile, "utf8");
   for (const match of html.matchAll(/href=["']([^"']+)["']/g)) {
-    const target = targetFile(match[1]);
-    if (target && !fs.existsSync(target)) failures.push(`${path.relative(outputDirectory, htmlFile)} -> ${match[1]}`);
+    const targets = targetFiles(match[1]);
+    if (targets && !targets.some((target) => fs.existsSync(target))) {
+      failures.push(`${path.relative(outputDirectory, htmlFile)} -> ${match[1]}`);
+    }
   }
 }
 
