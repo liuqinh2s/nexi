@@ -1,0 +1,52 @@
+---
+title: mathjax常用公式记录
+slug: mathjax常用公式记录
+date: '2018-04-30'
+description: >-
+  角度记法 度数： 60^ circ ， 60^ circ 度数分： 60^ prime ， 60^ prime 弧度： frac pi 2 ， frac
+  pi 2 角度记法： angle A ， angle A 三重环积分无法渲染的问题 在网上找了半天资料最终解决了，参考这个答案：How do you
+  render a closed surface doub
+tags:
+  - 工具
+categories: []
+format: markdown
+comments: true
+---
+## 角度记法
+
+- 度数：`$60^\circ$`，$60^\circ$
+- 度数分：`$60^\prime$`，$60^\prime$
+- 弧度：`$\frac{\pi}{2}$`，$\frac{\pi}{2}$
+- 角度记法：`$\angle A$`，$\angle A$
+
+## 三重环积分无法渲染的问题
+
+在网上找了半天资料最终解决了，参考这个答案：[How do you render a closed surface double integral?](https://math.meta.stackexchange.com/questions/9973/how-do-you-render-a-closed-surface-double-integral)，做法是直接使用 Unicode 编码：`\unicode{x222F}`，三重环积分的编码，参考这里：[unicode-search.net](http://unicode-search.net/unicode-namesearch.pl?term=INTEGRAL)，所以只要将`$\oiiint$`换成`$\unicode{x2230}$`即可正确显示三重环积分。如下：
+
+$$\unicode{x2230}$$
+
+<!-- more -->
+
+## 行内 limit
+
+```
+$\lim\limits_{x\rightarrow 0} \frac{\sin x}{x} = 1$
+```
+
+效果：$\lim\limits_{x\rightarrow 0} \frac{\sin x}{x} = 1$
+
+```
+$\lim_{x\rightarrow 0} \frac{\sin x}{x} = 1$
+```
+
+效果：$\lim_{x\rightarrow 0} \frac{\sin x}{x} = 1$
+
+凭个人喜好，我就更喜欢第一种。
+
+## 弧
+
+```
+$\overset{\frown} {AB}$
+```
+
+$\overset{\frown} {AB}$

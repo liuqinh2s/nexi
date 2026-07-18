@@ -1,0 +1,208 @@
+---
+title: linux使用手册
+slug: linux使用手册
+date: '2023-06-07'
+description: >-
+  最近买了一台服务器，太多 linux
+  命令要上网查询了，已经不适合记在札记里面（札记里面一般是记录比较杂的东西，篇幅尚不能形成文章），所以专门开了一篇文章来讲我在使用 linux
+  服务器遇到的问题，以及解决办法。 首先要谈的是服务器安全问题 以前搭 wordpress 博客的时候，被盗过两次，跟同事讨论了之后，发现可能是因为我使用了
+  root 账号远程登录，
+tags:
+  - 服务器运维
+categories: []
+format: markdown
+comments: true
+---
+最近买了一台服务器，太多 linux 命令要上网查询了，已经不适合记在札记里面（札记里面一般是记录比较杂的东西，篇幅尚不能形成文章），所以专门开了一篇文章来讲我在使用 linux 服务器遇到的问题，以及解决办法。
+
+首先要谈的是服务器安全问题
+
+以前搭 wordpress 博客的时候，被盗过两次，跟同事讨论了之后，发现可能是因为我使用了 root 账号远程登录，要论安全性的话，最好的方式是：
+
+1. 禁止 root 账号远程登录（那么别人想要登录，就只能猜你的账号名+密码，如果你开放了 root 登录，别人就只需要猜 root 密码）
+2. 把 ssh 端口改为非 22 端口，那黑客想要破解，就需要猜端口
+3. 普通账号不给 root 权限，这样即便普通账号被盗，情况也不算严重
+4. 设置一个强的 root 密码
+
+这样一套组合拳打下来，黑客想要获取你服务器的最高权限，首先要知道你的 ssh 端口，然后要知道一对普通账号密码，最后要知道 root 的密码，才能最终获得最高权限。相比于只靠 root 密码的强度，安全了许多许多。
+
+> 发现一个问题是 FinalShell 不能直接编辑并保存文件了，应该是权限的问题。
+
+<!-- more -->
+
+以下是需要用到的 linux 命令：
+
+- 新建用户：`useradd <yourname>`
+- 修改用户密码：`passwd <yourname>`
+- 修改 ssh 端口号：编辑`/etc/ssh/sshd_config`文件，修改`#Port 22`为：`Port xxxx`
+- 禁止 root 账号远程登录：编辑`/etc/ssh/sshd_config`文件，修改`#PermitRootLogin yes`为：`PermitRootLogin no`
+
+修改完`/etc/ssh/sshd_config`文件后，需要重启一下服务：
+
+```bash
+setenforce 0
+sudo service sshd restart
+```
+
+修改完端口，还要让防火墙放行此端口：
+
+```bash
+// 放行指定端口
+firewall-cmd --zone=public --add-port=xxxx/tcp --permanent
+// 重启防火墙
+systemctl restart firewalld.service
+// 重新载入配置
+firewall-cmd --reload
+```
+
+# 前因
+
+买了国外的域名和服务器，这样就可以避免国内特别麻烦的备案了，话说国外的域名和服务器真是便宜啊：
+
+- 服务器（VPS）：[racknerd.com](https://www.racknerd.com/)
+- 域名：[name.com](https://www.name.com/)
+
+服务器购买参考了一篇文章：https://p3terx.com/archives/cheap-vps-racknerd.html，多亏这篇文章才买到了便宜的。
+
+Windows 平台好用的远程 shell 工具：[WindTerm](https://github.com/kingToolbox/WindTerm)
+Mac OS 平台好用的远程 shell 工具：[FinalShell](http://www.hostbuf.com/t/988.html)
+
+> 现在 Windows 平台也有 FinalShell 了，体验终于又统一起来了
+
+## centos 安装 nginx
+
+yum install 没有可用软件包 nginx。
+
+```bash
+
+已加载插件：fastestmirror
+Loading mirror speeds from cached hostfile
+ * base: mirror.lzu.edu.cn
+ * extras: mirror.lzu.edu.cn
+ * updates: mirror.lzu.edu.cn
+没有可用软件包 nginx。
+错误：无须任何处理
+```
+
+原因是 nginx 位于第三方的 yum 源里面，而不在 centos 官方 yum 源里面
+
+解决方法：
+
+安装
+
+```bash
+sudo yum install epel-release
+```
+
+更新
+
+```bash
+yum update
+```
+
+重新试一下：
+
+```bash
+yum install -y nginx
+```
+
+## nginx
+
+nginx 的配置位置：`/etc/nginx`中，在该目录下，主要的配置文件是 nginx.conf
+
+常见需求和解决办法：
+
+1. ssl 证书怎么搞：Let's Encrypt 提供的解决方案，按照这个操作：[certbot instructions](https://certbot.eff.org/instructions?ws=nginx&os=centosrhel7)
+2. nginx 配置域名：修改 nginx.conf 里面的 server_name 字段
+3. HTTP 跳转到 HTTPS：使用 301 重定向的方式将 http 的请求重定向到 https 上
+
+```
+server {
+    listen 80;
+
+    #填写绑定证书的域名
+    server_name www.xxx.com;
+
+    #把http的域名请求转成https
+    return 301 https://$host$request_uri;
+}
+```
+
+### nginx 配置单页应用
+
+```
+location / {
+  try_files $uri $uri/ /index.html?$args;
+  index  index.html;
+}
+```
+
+## Shadowsocks 搭建
+
+```bash
+pip install https://github.com/shadowsocks/shadowsocks/archive/master.zip -U
+vim /etc/shadowsocks.json
+{
+"server":"0.0.0.0",
+"server_port":"端口",
+"local_port":1080,
+"password":"密码",
+"timeout":300,
+"method":"aes-256-gcm"
+}
+ssserver -c /etc/shadowsocks.json -d start
+```
+
+## 防火墙
+
+查看防火墙开放的端口：`firewall-cmd --list-ports`
+
+## 把常用的程序做成服务，并开机启动
+
+新建服务脚本：`/etc/systemd/system/shadowsocks.service`
+
+```
+[Unit]
+Description=Shadowsocks Server Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/ssserver -c /etc/shadowsocks.json
+
+[Install]
+WantedBy=multi-user.target
+```
+
+## 常用命令
+
+- 创建用户：`useradd <用户名>`，删除用户：`userdel <用户名>`
+- 修改密码：`passwd <用户名>`
+- 创建用户组：`groupadd <用户组名>`，删除用户组：`groupdel <用户组名>`，查看所有组：`groups`
+- 查看端口占用 `lsof -i :<端口号>`
+- 查看某些应用的端口占用情况，比如 ssh 的端口号：`netstat -anp |grep ssh`
+- 给用户某个文件夹权限：`chown -R liuhai:liuhai /opt # 将目录/opt 及其下面的所有文件、子目录的文件主改成 liuhai`
+
+## 常见文件位置
+
+- hosts 文件位置：`/etc/hosts`
+- nginx 配置位置：`/etc/nginx/nginx.conf`
+
+## vim 编辑常用技巧
+
+去除多行注释：
+
+1. 按 ctrl+v 进入 visual block 模式
+2. 按上下方向键选择多行
+3. 按 d 去掉#
+
+## linux 基础知识
+
+ls 展示的权限的含义：
+
+linux drwxr-xr-x
+第一位表示文件类型。d 是目录文件，l 是链接文件，-是普通文件，p 是管道
+第 2-4 位表示这个文件的属主拥有的权限，r 是读，w 是写，x 是执行。
+第 5-7 位表示和这个文件属主所在同一个组的用户所具有的权限。
+第 8-10 位表示其他用户所具有的权限。

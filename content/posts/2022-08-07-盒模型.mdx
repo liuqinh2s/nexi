@@ -1,0 +1,106 @@
+---
+title: 盒模型
+slug: 盒模型
+date: '2022-08-07'
+description: >-
+  基本概念 margin border padding content 标准模型和 IE 模型的区别 标准模型的 width = content IE 模型的
+  width = content+2 padding+2 border 通过 css3 新增的属性 box sizing: content box
+  border box 分别设置盒模型为标准模型（ con
+tags:
+  - css
+categories: []
+format: markdown
+comments: true
+---
+# 基本概念
+
+- margin
+- border
+- padding
+- content
+
+![](/images/legacy/2022/盒模型.png)
+
+# 标准模型和 IE 模型的区别
+
+- 标准模型的 `width = content`
+- IE 模型的 `width = content+2*padding+2*border`
+
+通过 css3 新增的属性 `box-sizing: content-box | border-box`分别设置盒模型为标准模型（`content-box`）和 IE 模型（`border-box`）。
+
+## 标准模型
+
+```JavaScript
+.content-box {
+  box-sizing:content-box;
+  width: 100px;
+  height: 50px;
+  padding: 10px;
+  border: 5px solid red;
+  margin: 15px;
+}
+```
+
+`.content-box`设置为标准模型，它的元素宽度 width=100px。
+
+![](/images/legacy/2022/标准盒模型.png)
+
+## IE 模型
+
+```JavaScript
+.border-box {
+  box-sizing: border-box;
+  width: 100px;
+  height: 50px;
+  padding: 10px;
+  border: 5px solid red;
+  margin: 15px;
+}
+```
+
+`.border-box`设置为 IE 模型，它的元素宽度 `width=content + 2*padding+2*border = 70px + 2*10px+2*5px = 100px`。
+
+![](/images/legacy/2022/IE盒模型.png)
+
+# javascript 如何设置获取盒模型对应的宽和高
+
+1.  `dom.style.width/height` 只能取到行内样式的宽和高，style 标签中和 link 外链的样式取不到。
+2.  `dom.currentStyle.width/height` 取到的是最终渲染后的宽和高，只有 IE 支持此属性。
+3.  `window.getComputedStyle(dom).width/height` 同（2）但是多浏览器支持，IE9 以上支持。
+4.  `dom.getBoundingClientRect().width/height` 也是得到渲染后的宽和高，大多浏览器支持。IE9 以上支持，除此外还可以取到相对于视窗的上下左右的距离
+
+# 外边距重叠
+
+当两个垂直外边距相遇时，他们将形成一个外边距，合并后的外边距高度等于两个发生合并的外边距的高度中的较大者。**注意**：只有普通文档流中块框的垂直外边距才会发生外边距合并，行内框、浮动框或绝对定位之间的外边距不会合并。
+
+![](/images/legacy/2022/外边距合并.png)
+
+可以是兄弟元素，也可以父子元素之间发生外边距重叠。
+
+看下面这个例子：
+
+```JavaScript
+<section id="sec">
+    <style media="screen">
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        #sec {
+            background: #f00;
+            margin-top: 20px;
+            /* overflow: hidden; */
+        }
+        .child {
+            height: 100px;
+            margin-top: 10px;
+            background: yellow;
+        }
+    </style>
+    <article class="child"></article>
+</section>
+```
+
+子元素的 margin-top: 10px 没有生效，当我们加了 overflow: hidden 后才生效。给父级加了 overflow:hidden, 其实就是给父级元素创建一个 BFC(块级格式化上下文)，那什么是 BFC，请看下一个话题。
+
+[BFC](../BFC)

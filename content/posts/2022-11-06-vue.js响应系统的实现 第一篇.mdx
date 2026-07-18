@@ -1,0 +1,379 @@
+---
+title: vue.js响应系统的实现 第一篇
+slug: vue.js响应系统的实现 第一篇
+date: '2022-11-06'
+description: >-
+  什么是副作用函数？
+  如果一个函数只是接收输入，然后输出，没有影响外部（比如修改外部变量），那么我们就说这个函数没有副作用，反之就是有副作用。理想的情况下，我们希望所有的函数都很纯粹，没有副作用。
+  举个例子：
+tags:
+  - Vue
+categories: []
+format: markdown
+comments: true
+---
+## 什么是副作用函数？
+
+如果一个函数只是接收输入，然后输出，没有影响外部（比如修改外部变量），那么我们就说这个函数没有副作用，反之就是有副作用。理想的情况下，我们希望所有的函数都很纯粹，没有副作用。
+
+举个例子：
+
+```javascript
+function effect() {
+  document.body.innerText = "hello vue3";
+}
+```
+
+<!-- more -->
+
+## Proxy
+
+我们都知道 vue.js 这类框架是声明式的，当数据发生变化，它可以监听到并重新渲染，那么这种响应系统是如何实现的呢？首先一个问题就是怎么监听到数据的变化。答案是 Proxy，vue2 用了`Object.defineProperty()`函数，这是 es2015 之前的做法，vue3 则是用了 es2015 带来的新特性：`Proxy`。
+
+通过 Proxy 我们可以监听到数据的变化（set），那就可以调用副作用函数更新 dom 了。
+
+最简单的响应系统设计如下：
+
+```javascript
+function effect(data) {
+  document.body.innerText = data.text;
+}
+const data = { text: "hello vue3" };
+const obj = new Proxy(data, {
+  get(target, key) {
+    return target[key];
+  },
+  set(target, key, value) {
+    target[key] = value;
+    effect(target);
+    return true;
+  },
+});
+// 首次渲染
+effect(data);
+// set操作，触发重新渲染
+obj.text = "11"; // 这里必须要修改obj对象（改data是监听不到的）
+```
+
+下面开始，都是需求变化产生的代码变化了。
+
+1. 如果有多个副作用函数需要注册，怎么办？
+2. 如果这些多个副作用函数，监听的是这个对象的不同 key，怎么办？
+3. 如果这些多个副作用函数，监听的是多个对象的不同 key，怎么办？
+4. 分支切换
+
+## 如果有多个副作用函数需要注册，怎么办？
+
+代码如下：
+
+```javascript
+function effect1(data) {
+  document.body.innerText = data.text;
+}
+function effect2(data) {
+  document.body.setAttribute(data.text);
+}
+const data = { text: "hello vue3" };
+const obj = new Proxy(data, {
+  get(target, key) {
+    return target[key];
+  },
+  set(target, key, value) {
+    target[key] = value;
+    effect1(target);
+    effect2(target);
+    return true;
+  },
+});
+// 首次渲染
+effect1(obj);
+effect2(obj);
+// set操作，触发重新渲染
+obj.text = "11"; // 这里必须要修改obj对象（改data是监听不到的）
+```
+
+这样写，显然很不灵活（因为要去修改已经写好的代码），那么怎么设计才能不去动已经写好的代码呢？答案是传回调函数：
+
+```javascript
+const bucket = new Set();
+function useEffect(fn, data) {
+  bucket.add(fn);
+  return fn(data);
+}
+
+const data = { text: "hello vue3" };
+const obj = new Proxy(data, {
+  get(target, key) {
+    return target[key];
+  },
+  set(target, key, value) {
+    target[key] = value;
+    bucket.forEach((fn) => fn(target));
+    return true;
+  },
+});
+// 首次渲染
+useEffect((data) => {
+  document.body.innerText = data.text;
+}, data);
+useEffect((data) => {
+  document.body.setAttribute("a", data.text);
+}, data);
+// set操作，触发重新渲染
+obj.text = "11"; // 这里必须要修改obj对象（改data是监听不到的）
+```
+
+这样的写法，是不是很像 react 的 useEffect()了。
+
+## 如果这些多个副作用函数，监听的是这个对象的不同 key，怎么办？
+
+用个 Map，让 key 和回调函数一一对应即可，但如何知道副作用函数用了哪个 key 呢？如果是在 useEffect 里面显然是不知道的，但用没用 key，用了哪个 key，Proxy 里面的 get 拦截函数是一清二楚的，所以我们应该在这里添加副作用函数！但 get 拦截函数里面又不知道，当前获取数据的函数是哪个，很简单，我们设置一个 activeEffect 来记录当前的函数。但需要注意的是，一但我们开始在 get 里面注册响应，每次调用副作用函数就会调用注册响应，这个时候需要更新 activeEffect。
+
+```javascript
+let activeEffect;
+const bucket = new Map();
+function useEffect(fn, data) {
+  function effectFn(data) {
+    activeEffect = effectFn;
+    return fn(data);
+  }
+  return effectFn(data);
+}
+
+const data = { text: "hello vue3", a: "11" };
+const obj = new Proxy(data, {
+  get(target, key) {
+    if (activeEffect) {
+      const effects = bucket.get(key);
+      if (!effects) {
+        bucket.set(key, new Set([activeEffect]));
+      } else {
+        effects.add(activeEffect);
+      }
+    }
+    return target[key];
+  },
+  set(target, key, value) {
+    target[key] = value;
+    const effects = bucket.get(key);
+    effects && effects.forEach((fn) => fn(target));
+    return true;
+  },
+});
+// 首次渲染
+useEffect((data) => {
+  document.body.innerText = data.text;
+}, obj); // 这里也要传obj了，不然get的时候，也是监听不到的
+useEffect((data) => {
+  document.body.setAttribute("a", data.a);
+}, obj);
+// set操作，触发重新渲染
+obj.text = "hello aaaa"; // 这里必须要修改obj对象（改data是监听不到的）
+obj.a = "222";
+```
+
+这样就实现了对单个对象的多个不同 key 注册多个副作用函数，进行响应式渲染。
+
+而且，我们可以把其中处理副作用函数的逻辑抽出来：
+
+```javascript
+let activeEffect;
+const bucket = new Map();
+function useEffect(fn, data) {
+  function effectFn(data) {
+    activeEffect = effectFn;
+    return fn(data);
+  }
+  return effectFn(data);
+}
+
+const data = { text: "hello vue3", a: "11" };
+const obj = new Proxy(data, {
+  get(target, key) {
+    track(key);
+    return target[key];
+  },
+  set(target, key, value) {
+    target[key] = value;
+    trigger(target, key);
+    return true;
+  },
+});
+function track(key) {
+  if (activeEffect) {
+    const effects = bucket.get(key);
+    if (!effects) {
+      bucket.set(key, new Set([activeEffect]));
+    } else {
+      effects.add(activeEffect);
+    }
+  }
+}
+function trigger(target, key) {
+  const effects = bucket.get(key);
+  effects && effects.forEach((fn) => fn(target));
+}
+// 首次渲染
+useEffect((data) => {
+  document.body.innerText = data.text;
+}, obj);
+useEffect((data) => {
+  document.body.setAttribute("a", data.a);
+}, obj);
+// set操作，触发重新渲染
+obj.text = "hello aaaa";
+obj.a = "222";
+```
+
+## 如果这些多个副作用函数，监听的是多个对象的不同 key，怎么办？
+
+再加一个 Map 即可，而且由于键是个对象，最好用 WeakMap：
+
+```javascript
+let activeEffect;
+const bucket = new WeakMap();
+function useEffect(fn, data) {
+  function effectFn(data) {
+    activeEffect = effectFn;
+    return fn(data);
+  }
+  return effectFn(data);
+}
+
+const data1 = { text: "hello vue3", a: "11" };
+const data2 = { text2: "hello vue2", b: "22" };
+const obj1 = createProxyObj(data1);
+const obj2 = createProxyObj(data2);
+
+function createProxyObj(data) {
+  return new Proxy(data, {
+    get(target, key) {
+      track(target, key);
+      return target[key];
+    },
+    set(target, key, value) {
+      target[key] = value;
+      trigger(target, key);
+      return true;
+    },
+  });
+}
+function track(target, key) {
+  if (activeEffect) {
+    let effectsOnTarget = bucket.get(target);
+    if (!effectsOnTarget) {
+      bucket.set(target, (effectsOnTarget = new Map()));
+    }
+    let effects = effectsOnTarget.get(key);
+    if (!effects) {
+      effectsOnTarget.set(key, (effects = new Set()));
+    }
+    effects.add(activeEffect);
+  }
+}
+function trigger(target, key) {
+  const effectsOnTarget = bucket.get(target);
+  if (effectsOnTarget) {
+    const effects = effectsOnTarget.get(key);
+    effects && effects.forEach((fn) => fn(target));
+  }
+}
+// 首次渲染
+useEffect((data) => {
+  document.body.innerText = data.text;
+}, obj1);
+useEffect((data) => {
+  document.body.setAttribute("b", data.b);
+}, obj2);
+// set操作，触发重新渲染
+obj1.text = "hello aaaa";
+obj2.b = "333";
+```
+
+## 分支切换
+
+目前来说：
+
+1. 首次执行副作用函数会触发 get，get 会把副作用函数添加为响应函数。
+2. 然后更新值的时候会触发 set，set 会执行响应函数，执行响应函数又会触发 get，get 会把副作用函数添加为响应函数。
+
+也就是说每次更新值都会重新添加响应函数，似乎很冗余，能否只执行一次呢？答案是不能，因为可能存在分支，例如：
+
+```javascript
+const data = { ok: true, text: "hello world" };
+const obj = new Proxy(data, {
+  /* ... */
+});
+
+useEffect(function effectFn() {
+  document.body.innerText = obj.ok ? obj.text : "not";
+}, obj);
+```
+
+当 obj.ok 为 true 的时候，obj.text 的响应函数会记录下副作用函数，但如果 obj.ok 为 false 的时候，修改 obj.text 其实不用执行副作用函数了，但由于之前添加过，所以还是会执行。
+
+所以我们不仅要重新添加响应函数，还需要清理之前添加的。这样每次添加的响应函数才会是准确无误的。
+
+为了清理响应函数，比较粗暴一点的是遍历 bucket 中的每个 target 的每个 key，然后对其 set 集合执行 delete()方法，但这样显然不太好，我们可以记录一下哪些集合存了当前副作用函数，只对这些集合执行 delete()方法。
+
+代码如下：
+
+```javascript
+function useEffect(fn, data) {
+  effectFn.records = [];
+  return effectFn(data);
+
+  function effectFn(data) {
+    cleanup(effectFn);
+    activeEffect = effectFn;
+    return fn(data);
+
+    function cleanup(effectFn) {
+      for (let i = 0; i < effectFn.records.length; i++) {
+        effectFn.records[i].delete(fn);
+      }
+    }
+  }
+}
+
+function track(target, key) {
+  if (activeEffect) {
+    let effectsOnTarget = bucket.get(target);
+    if (!effectsOnTarget) {
+      bucket.set(target, (effectsOnTarget = new Map()));
+    }
+    let effects = effectsOnTarget.get(key);
+    if (!effects) {
+      effectsOnTarget.set(key, (effects = new Set()));
+    }
+    effects.add(activeEffect);
+    activeEffect.records.push(effects); // 新增
+  }
+}
+```
+
+我们改写了 useEffect，增加了一个 records 来记录需要清理哪些集合，在每次重新添加响应之前，清理掉旧的响应。并在 track 函数里面对这个 records 进行填充。
+
+但还存在一个问题，这个问题比较隐秘，那就是遍历的时候对遍历对象进行 add 和 delete 操作，trigger 中我们执行响应函数，响应函数会对桶先 cleanup 再重新添加，但这个时候我们还在遍历桶啊，所以就相当于这样：
+
+```javascript
+const set = new Set([1]);
+
+set.forEach((item) => {
+  set.delete(1);
+  set.add(1);
+  console.log("遍历中");
+});
+```
+
+这会造成死循环，解决的办法，自然是不对遍历的对象增删，新搞个对象进行增删。修改后的代码如下：
+
+```javascript
+function trigger(target, key) {
+  const effectsOnTarget = bucket.get(target);
+  if (effectsOnTarget) {
+    const effects = effectsOnTarget.get(key);
+    effects && [...effects].forEach((fn) => fn(target)); // 修改，不对原集合进行一边遍历一边增删
+  }
+}
+```

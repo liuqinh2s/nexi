@@ -1,0 +1,64 @@
+---
+title: 服务器重装系统
+slug: 服务器重装系统
+date: '2022-06-11'
+description: >-
+  今天我的 wordpress 数据库被攻击了，目前还不知道黑客用了什么手段，所以打算给服务器重装系统。我用的是搬瓦工的服务器，打开管理界面，我选择的是
+  centos 7 x86 64 bbr
+tags:
+  - Linux
+categories: []
+format: markdown
+comments: true
+---
+今天我的 wordpress 数据库被攻击了，目前还不知道黑客用了什么手段，所以打算给服务器重装系统。我用的是搬瓦工的服务器，打开管理界面，我选择的是 centos-7-x86_64-bbr
+
+<!-- more -->
+
+> BBR（Bottleneck Bandwidth and RTT）是一种新的拥塞控制算法，由 Google 贡献给 Linux 内核 TCP 堆栈。有了 BBR，Linux 服务器可以显着提高吞吐量并减少连接延迟。此外，部署 BBR 很容易，因为此算法只需要在发送方更新，而无需在网络或接收方更新。
+
+# 搭建 Shadowsocks
+
+然后首先想到的是要安装 shadowsocks，因为我这个服务器基本上就是用来干这个事的。
+
+我不想使用网上那种一键安装脚本的方式来弄这个，因为怕不安全（真的怕了怕了）。所以最好要自己搞懂每一步都做了什么。
+
+主要参考这篇文章：https://gist.github.com/3013216027/469e7b988edde7e5f806f55a993b9efa
+
+发现安装 shadowsocks 之前先要安装 pip
+
+安装 pip 则要安装 python3
+
+## 安装 python3
+
+我试了一下`yum install python3`居然真的能安装，终于不用像以前那样从 python 官网下载源码，自己编译，自己配环境变量了。
+
+安装完后测一下版本`python3 --version`：Python 3.6.8，测一下安装位置：`which python3`：/usr/bin/python3
+
+## 安装 shadowsocks
+
+接下来就是安装 shadowsocks 了：`python3 -m pip install shadowsocks`
+
+安装完后测一下 ssserver 看能不能用，直接输入这个命令看看效果，能用，定位一下位置：
+
+`which ssserver`：/usr/local/bin/ssserver。
+
+卸载 shadowsocks 后就不能用了，所以能确定 ssserver 是跟 shadowsocks 有关的。
+
+## 配置 shadowsocks
+
+```
+{
+    "server": "0.0.0.0",
+    "local_port": 1080,
+    "port_password": {
+        "10085": "gagosdfger",
+        "10086": "gagosdfger",
+        "10010": "gagosdfger"
+    },
+    "method": "aes-256-cfb",
+    "timeout": 600
+}
+```
+
+发现加密方法不支持`aes-256-gcm`，有什么办法给它加一种加密方式呢

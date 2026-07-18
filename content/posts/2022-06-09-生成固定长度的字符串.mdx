@@ -1,0 +1,39 @@
+---
+title: 生成固定长度的字符串
+slug: 生成固定长度的字符串
+date: '2022-06-09'
+description: >-
+  前端一般都要应对各种各样的用户输入，比如限制用户输入的字符串长度不超过 255 个字符。那么我自己测试的时候，去哪里弄个 256
+  长度的字符串呢，作为一个程序员，当然是自己写代码生成。下面我就来罗列一下有哪些方法可以实现这个需求。
+tags:
+  - JavaScript
+categories: []
+format: markdown
+comments: true
+---
+前端一般都要应对各种各样的用户输入，比如限制用户输入的字符串长度不超过 255 个字符。那么我自己测试的时候，去哪里弄个 256 长度的字符串呢，作为一个程序员，当然是自己写代码生成。下面我就来罗列一下有哪些方法可以实现这个需求。
+
+<!-- more -->
+
+# 字符串方法：padStart()和 padEnd()
+
+ES6 的字符串新语法 padStart()和 padEnd()，可以很好的完成这个需求：
+
+```JavaScript
+''.padStart(256, 'a');
+''.padEnd(256, 'a');
+```
+
+官方文档：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/String/padStart
+
+# 数组方法： join()
+
+```JavaScript
+new Array(256).fill('a').join('');
+```
+
+# 字符串方法：repeat()
+
+```JavaScript
+'a'.repeat(256);
+```

@@ -1,0 +1,39 @@
+---
+title: 寻找字符串中出现最多的字符怎么实现？
+slug: 寻找字符串中出现最多的字符怎么实现？
+date: '2022-07-24'
+description: 寻找字符串中出现最多的字符怎么实现？ 遍历一遍字符串，用个 map 记录每个字符出现的次数，然后遍历一遍 map，取出出现次数最多的字符
+tags:
+  - 编程题
+categories: []
+format: markdown
+comments: true
+---
+## 寻找字符串中出现最多的字符怎么实现？
+
+遍历一遍字符串，用个 map 记录每个字符出现的次数，然后遍历一遍 map，取出出现次数最多的字符
+
+<!-- more -->
+
+```typescript
+function getMaxChar(str: string): string {
+  const map = {};
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i];
+    if (!map[c]) {
+      map[c] = 1;
+    } else {
+      map[c]++;
+    }
+  }
+  let max = 0;
+  let maxChar;
+  for (let k of Object.keys(map || {})) {
+    if (max < map[k]) {
+      max = map[k];
+      maxChar = k;
+    }
+  }
+  return maxChar;
+}
+```

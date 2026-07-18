@@ -1,0 +1,114 @@
+---
+title: 图灵机
+slug: 图灵机
+date: '2019-04-26'
+description: >-
+  图灵机 图灵机（Turing Machine）是 英国数学家艾伦·图灵 在 1936 年发表的 "On Computable Numbers, with
+  an Application to the
+  Entscheidungsproblem"（《论可计算数及其在判定性问题上的应用》）中提出的数学模型。在文章中图灵描述了它是什么，并且证明了，只要图灵机可以被实现
+tags:
+  - 编程基础
+categories: []
+format: markdown
+comments: true
+---
+## [图灵机](https://zh.wikipedia.org/wiki/%E5%9B%BE%E7%81%B5%E6%9C%BA)
+
+图灵机（Turing Machine）是 [英国数学家艾伦·图灵](https://zh.wikipedia.org/wiki/%E8%89%BE%E4%BC%A6%C2%B7%E5%9B%BE%E7%81%B5) 在 1936 年发表的 "[On Computable Numbers, with an Application to the Entscheidungsproblem](https://www.cs.virginia.edu/~robins/Turing_Paper_1936.pdf)"（《论可计算数及其在判定性问题上的应用》）中提出的数学模型。在文章中图灵描述了它是什么，并且证明了，只要图灵机可以被实现，就可以用来解决任何可计算问题。
+
+### 历史
+
+- [妈咪说：图灵](https://www.bilibili.com/video/av30479683?from=search&seid=11735601712045998475)
+- [模仿游戏](https://movie.douban.com/subject/10463953/)
+
+<!--more-->
+
+### 图灵机的基本思想
+
+图灵机是一种 **抽象计算模型**，图灵机的构成：
+
+- 一条无限长的纸带，纸带由很多个格子构成，用于输入输出信息。每个格子中包含一个来自有限字母表的符号，字母表中有一个特殊符号表示空白。纸带上一端的格子从 0 开始编号，另一端无限延伸一直到无穷大。
+- 一个读写头，用于读写纸带
+- 一个状态寄存器，用于保存机器状态。图灵机的状态个数有限，并且有一个特殊的状态：停机状态
+- 一套控制规则，根据当前机器状态和纸带内容来确定下一步的动作：
+  - 写入或擦除当前格子内容
+  - 移动读写头，向左、向右、或不动
+  - 保持当前状态或转移到另一状态
+
+### 图灵机的正式定义
+
+a (one-tape) Turing machine can be formally defined as a **7-tuple** $M=\langle Q,\Gamma ,b,\Sigma ,\delta ,q\_{0},F\rangle $ where
+
+- $Q$ is a finite, non-empty set of **states**;
+- $\Gamma$ is a finite, non-empty set of **tape alphabet symbols**;
+- $b\in \Gamma$ is the **blank symbol** (the only symbol allowed to occur on the tape infinitely often at any step during the computation);
+- $\Sigma \subseteq \Gamma \setminus \{b\}$ is the set of **input symbols**, that is, the set of symbols allowed to appear in the initial tape contents;
+- $q_{0}\in Q$ is the **initial state**;
+- $F\subseteq Q$ is the set of **final states or accepting states**. The initial tape contents is said to be accepted by $M$ if it eventually halts in a state from $F$.
+- $\delta :(Q\setminus F)\times \Gamma \not \to Q\times \Gamma \times \\{L,R\\}$ is a partial function called the **transition function**, where L is left shift, R is right shift. (A relatively uncommon variant allows "no shift", say N, as a third element of the latter set.) If $\delta$ is not defined on the current state and the current tape symbol, then the machine **halts**;
+
+### 图灵机的实践
+
+- [Brainfuck](https://zh.wikipedia.org/wiki/Brainfuck)
+
+### 图灵完备
+
+只要能模拟单带图灵机，就是图灵完备的。这也意味着其计算能力与通用图灵机等同。
+
+不是图灵完备的的常见情况有；
+
+1. 递归或循环有限，无法写不终止的程序，如`while(true){}`
+2. 无法实现类似数组或列表这样的数据结构（不能模拟纸带）
+
+图灵完备也有可能带来坏处，不图灵完备也不是完全没用，比如：有些场景我们需要限制语言的表达能力，如 限制无限循环和递归，保证我们的程序一定是可终止的。
+
+### [停机问题](https://zh.wikipedia.org/wiki/%E5%81%9C%E6%9C%BA%E9%97%AE%E9%A2%98)
+
+停机问题（英语：halting problem）是逻辑数学中可计算性理论的一个问题。通俗地说，停机问题就是判断任意一个程序是否能在有限的时间之内结束运行的问题。该问题等价于如下的判定问题：是否存在一个程序 P，对于任意输入的程序 w，能够判断 w 会在有限时间内 **结束或者死循环**。
+
+艾伦·图灵在 1936 年用 [对角论证法](https://zh.wikipedia.org/wiki/%E5%B0%8D%E8%A7%92%E8%AB%96%E8%AD%89%E6%B3%95) 证明了，不存在解决停机问题的通用算法。
+
+> 停机问题包含了 [自我指涉](https://zh.wikipedia.org/wiki/%E8%87%AA%E6%8C%87)，本质是 [一阶逻辑](https://zh.wikipedia.org/wiki/%E4%B8%80%E9%98%B6%E9%80%BB%E8%BE%91) 的不完备性，类似的命题有 [理发师悖论](https://zh.wikipedia.org/wiki/%E7%90%86%E5%8F%91%E5%B8%88%E6%82%96%E8%AE%BA)、[全能悖论](https://zh.wikipedia.org/wiki/%E5%85%A8%E8%83%BD%E6%82%96%E8%AB%96) 等。
+
+证明很简单，构造`G=~G`命题（G 等于 G 非），让逻辑崩溃，无论 G 是真还是假，都是错的，最后推导出：不存在这样的 G。
+
+停机问题证明过程（反证法）：
+
+1. 如果存在可以判定任意程序是否停机的程序，我们姑且称它为 **上帝程序**
+2. 那我们定义这样一个程序，它利用上帝程序判断自己是否停机，但如果上帝程序输出停机，它就不停；如果上帝程序输出不停机，它就停机（就是反着干）。这样一来无论上帝程序输出什么，上帝程序都是错的。那么我们只能说不存在这样的上帝程序。
+
+```python
+def is_halt(program, input):
+    if program halts on input:
+        return true
+    else:
+        return false
+
+def fuck_is_halt():
+    if is_halt(fuck_is_halt):
+        while (1):
+            pass
+    else:
+        pass
+```
+
+- [Matrix67：停机问题、Chaitin 常数与万能证明方法](http://www.matrix67.com/blog/archives/901)
+- [刘未鹏：康托尔、哥德尔、图灵——永恒的金色对角线(rev#2)](https://blog.csdn.net/pongba/article/details/1336028)
+
+### [自我指涉](https://zh.wikipedia.org/wiki/%E8%87%AA%E6%8C%87)
+
+![自我指涉](https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Ouroboros.png/220px-Ouroboros.png)
+
+在数学中，对自指的研究最终导致了著名的 [哥德尔不完备定理](https://zh.wikipedia.org/wiki/%E5%93%A5%E5%BE%B7%E5%B0%94%E4%B8%8D%E5%AE%8C%E5%A4%87%E5%AE%9A%E7%90%86)。
+
+> 计算机程序中的自指主要是为 [递归](https://zh.wikipedia.org/wiki/%E9%80%92%E5%BD%92)
+
+[德罗斯特效应](https://zh.wikipedia.org/wiki/%E5%BE%B7%E7%BD%97%E6%96%AF%E7%89%B9%E6%95%88%E5%BA%94)：
+
+我们经常可以在主播间看到类似的画面：
+
+![德罗斯特效应](https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Screenshot_Recursion_via_vlc.png/128px-Screenshot_Recursion_via_vlc.png)
+
+也可以用两面镜子自己做这个实验。
+
+- [妈咪说：哥德尔](https://www.bilibili.com/video/av31411706?from=search&seid=7703410137961337640)

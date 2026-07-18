@@ -1,0 +1,117 @@
+---
+title: BFC
+slug: BFC
+date: '2022-08-07'
+description: >-
+  BFC，Block Formatting Context，块级格式上下文 具有 BFC
+  特性的元素可以看作是隔离了的独立容器，容器里面的元素不会在布局上影响到外面的元素，并且 BFC 具有普通容器所没有的一些特性。 触发 BFC
+  只要元素满足下面任一条件即可触发 BFC 特性： body 根元素 浮动元素：float 除 none 以外的值 绝对定位元素：p
+tags:
+  - css
+categories: []
+format: markdown
+comments: true
+---
+BFC，Block Formatting Context，块级格式上下文
+
+**具有 BFC 特性的元素可以看作是隔离了的独立容器，容器里面的元素不会在布局上影响到外面的元素，并且 BFC 具有普通容器所没有的一些特性。**
+
+## 触发 BFC
+
+只要元素满足下面任一条件即可触发 BFC 特性：
+
+- body 根元素
+- 浮动元素：float 除 none 以外的值
+- 绝对定位元素：position (absolute、fixed)
+- display 为 inline-block、table-cells、flex
+- overflow 除了 visible 以外的值 (hidden、auto、scroll)
+
+## BFC 特性及应用
+
+### 同一个 BFC 下外边距会重叠
+
+```JavaScript
+<head>
+div{
+    width: 100px;
+    height: 100px;
+    background: lightblue;
+    margin: 100px;
+}
+</head>
+<body>
+    <div></div>
+    <div></div>
+</body>
+```
+
+![](https://secure2.wostatic.cn/static/fDz4SmEPuTEHWxMxbTLzr9/image.png?auth_key=1754470776-weDafH7BcARwVu6d4NsGVg-0-3b57116521cac7fca4c314a763a22ddf)
+
+如果想要避免外边距的重叠，可以将其放在不同的 BFC 容器中。
+
+```JavaScript
+<div class="container">
+    <p></p>
+</div>
+<div class="container">
+    <p></p>
+</div>
+.container {
+    overflow: hidden;
+}
+p {
+    width: 100px;
+    height: 100px;
+    background: lightblue;
+    margin: 100px;
+}
+
+```
+
+![](https://secure2.wostatic.cn/static/eryZHWUxduq5FBQ3yhikyT/image.png?auth_key=1754470776-9pRAgf2r6mNxg2XzqsJKFf-0-93c37260edbade99c4e1ae95633a0439)
+
+### **BFC 可以阻止元素被浮动元素覆盖**
+
+```JavaScript
+<div style="height: 100px;width: 100px;float: left;background: lightblue">
+  我是一个左浮动的元素
+</div>
+<div style="width: 200px; height: 200px;background: #eee">
+  我是一个没有设置浮动, 也没有触发 BFC 元素, width: 200px; height:200px; background: #eee;
+</div>
+```
+
+![](https://secure2.wostatic.cn/static/fZ2qSv4VkfzLyzU9sv9KwF/image.png?auth_key=1754470776-3aquejwmeETKb3KxSwVcZ7-0-525eef5e2d402c95d932f6a4fce1de75)
+
+```JavaScript
+<div style="height: 100px;width: 100px;float: left;background: lightblue;">
+    我是一个左浮动的元素
+</div>
+<div style="width: 200px; height: 200px;background: #eee; overflow: hidden;">
+    我是一个没有设置浮动, 也没有触发 BFC 元素, width: 200px; height:200px; background: #eee;
+</div>
+```
+
+![](https://secure2.wostatic.cn/static/cP9x4XGsFr3j7n9zQgZSTj/image.png?auth_key=1754470776-d5BryyM1SuHxpVdHbbb622-0-5632665032b67a2d133898ab383b9366)
+
+### **BFC 可以包含浮动的元素（清除浮动）**
+
+我们都知道，浮动的元素会脱离普通文档流，来看下下面一个例子
+
+```JavaScript
+<div style="border: 1px solid #000;">
+    <div style="width: 100px;height: 100px;background: #eee;float: left;"></div>
+</div>
+```
+
+![](https://secure2.wostatic.cn/static/5LifS3ZZa2vCt4PdyN1KZ2/image.png?auth_key=1754470776-vScPqkuqiUSuNWrNM8fa7C-0-072848e884690dab6e908963f86a11d9)
+
+由于容器内元素浮动，脱离了文档流，所以容器只剩下 2px 的边距高度。如果使触发容器的 BFC，那么容器将会包裹着浮动元素。
+
+```JavaScript
+<div style="border: 1px solid #000;overflow: hidden">
+    <div style="width: 100px;height: 100px;background: #eee;float: left;"></div>
+</div>
+```
+
+![](https://secure2.wostatic.cn/static/cHMYPJZmQUz1xvF91TqD6M/image.png?auth_key=1754470776-rfQZW8jXmR6F1rtZE69twH-0-c69fce10fb098fe43d8a1107d1bcf96f)

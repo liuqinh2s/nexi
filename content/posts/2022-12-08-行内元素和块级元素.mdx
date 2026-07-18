@@ -1,0 +1,92 @@
+---
+title: 行内元素和块级元素
+slug: 行内元素和块级元素
+date: '2022-12-08'
+description: >-
+  行内元素和块级元素算是 css 中最基础，也是最重要的部分了。需要彻底掌握才行。 比如，width 和 height
+  跟父节点和子节点的关系到底是什么，默认是什么？行内元素的 padding 和 margin 能设置吗？
+tags:
+  - 前端
+  - css
+categories: []
+format: markdown
+comments: true
+---
+行内元素和块级元素算是 css 中最基础，也是最重要的部分了。需要彻底掌握才行。
+
+比如，width 和 height 跟父节点和子节点的关系到底是什么，默认是什么？行内元素的 padding 和 margin 能设置吗？
+
+<!-- more -->
+
+> 行内元素，也叫内联元素，inline-element
+
+# 对比
+
+## 包含关系
+
+块级元素可以包含块级元素或者行内元素，行内元素只能包含行内元素。但这只是建议，并非强制，即便行内元素包含块级元素也不会报错。
+
+## 换行
+
+块级元素独占一行，前后都不可以有块级元素或者行内元素（当然 display: flex;可以让几个块级元素放在同一行）。行内元素们可以排列在同一行里，直到这一行放不下才换行。
+
+### 一个单词是不会换行的
+
+发现行内元素居然不会换行，原来是因为被当成一个单词了
+
+用样式可以控制每个字母换行：
+
+```css
+word-break: break-all;
+word-wrap: break-word;
+```
+
+实验例子：
+
+<iframe height="400" style="width: 100%;" scrolling="no" title="示例Pen" src="https://codepen.io/liuqinh2s/embed/OPMXyaB" frameborder="no" loading="lazy" allowtransparency="true" allowfullscreen="true">
+</iframe>
+
+[white-space - CSS：层叠样式表 | MDN](https://developer.mozilla.org/zh-CN/docs/Web/CSS/white-space)
+[word-break - CSS | MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/word-break)
+word-wrap 也叫`overflow-wrap`，是`word-break`的补充：[overflow-wrap - CSS：层叠样式表 | MDN](https://developer.mozilla.org/zh-CN/docs/Web/CSS/overflow-wrap)
+
+## 宽高
+
+块级元素可以设置宽高，行内元素不能设置宽高（即：width 和 height）。但行内元素可以设置 line-height（没有 line-width）。
+
+实验例子：
+
+<iframe height="400" style="width: 100%;" scrolling="no" title="示例Pen" src="https://codepen.io/liuqinh2s/embed/wBMWvqE" frameborder="no" loading="lazy" allowtransparency="true" allowfullscreen="true">
+</iframe>
+
+## 默认宽高
+
+块级元素默认继承父盒子的宽度，但高度不会继承（想要继承可以设置成`height: 100%;`），由内容物撑开或者自己设置。行内元素不能设置宽高，也不继承宽高，宽高都由内容物撑开。
+
+## 边距
+
+块级元素的 margin 和 padding 会对外产生边距效果，行内元素的 margin 和 padding 在水平方向上会对外产生效果，垂直方向上不会对外产生效果（不会影响布局和行高）。
+
+实验例子：
+
+<iframe height="400" style="width: 100%;" scrolling="no" title="示例Pen" src="https://codepen.io/liuqinh2s/embed/bNEeGdM" frameborder="no" loading="lazy" allowtransparency="true" allowfullscreen="true">
+</iframe>
+
+# display: inline，inline-block，block 的区别
+
+定义成 inline 就是行内元素，block 就是块级元素。它们的区别前面已经讲过了
+
+inline-block 是它们二者的综合，本质上也是个 block，除了不会独占一行。
+
+实验例子：
+
+<iframe height="980" style="width: 100%;" scrolling="no" title="示例Pen" src="https://codepen.io/liuqinh2s/embed/ogbLNzY" frameborder="no" loading="lazy" allowtransparency="true" allowfullscreen="true">
+</iframe>
+
+# 子元素怎么撑满剩余的空间？
+
+用 flex-grow 去撑满剩余的空间，具体怎么写：
+
+用 display: flex，然后 flex: 1，即可。flex: 1 的含义是 flex: 1 1 0。也就是 flex-grow: 1; flex-shrink: 1; flex-basis: 0。
+
+[flex，flex-grow，flex-shrink，flex-basis](../../14/flex，flex-grow，flex-shrink，flex-basis)

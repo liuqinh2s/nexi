@@ -1,0 +1,66 @@
+---
+title: leetcode 902. 最大为 N 的数字组合
+slug: leetcode 902. 最大为 N 的数字组合
+date: '2022-11-29'
+description: >-
+  这题是数位 dp 类型的题，遍历对象有两个： 1. 遍历 N 的每一位 2. 遍历 digits 问题规模是 N 的位数。 状态转移方程是这样思考得出：
+  在遍历 digits 时，设当前 digits 的值为 digits[i]： 1. 如果 digits[i]比 N 的第 j
+  位的数字小，则低位的数字就可以任意，那么由 digits[i]开头所产生的组合数
+tags:
+  - leetcode
+categories: []
+format: markdown
+comments: true
+---
+这题是数位 dp 类型的题，遍历对象有两个：
+
+1. 遍历 N 的每一位
+2. 遍历 digits
+
+问题规模是 N 的位数。
+
+状态转移方程是这样思考得出：
+
+在遍历 digits 时，设当前 digits 的值为 digits[i]：
+
+1. 如果 digits[i]比 N 的第 j 位的数字小，则低位的数字就可以任意，那么由 digits[i]开头所产生的组合数是：`digits.length**(j-1)`。
+2. 如果 digits[i]等于 N 的第 j 位数字，则还要继续对比第 j-1 位才知道能否凑出一个比 N 小的，也即递归，缩小问题规模。产生组合：dp[j-1]
+3. 如果 digits[i]大于 N 的第 j 位数字，则后面低位的数字不管是什么，都已经不能产生小于 N 的组合了。产生组合：0
+
+把每个 digits[i]对应的结果加起来，就是当前问题规模（问题规模为：j）的答案。
+
+状态转移方程：
+
+```javascript
+if (digits[i] < N[j]) {
+  dp[j] += digits.length ** (j - 1);
+} else if (digits[i] == N[j]) {
+  dp[j] += dp[j - 1];
+}
+```
+
+<!-- more -->
+
+代码：
+
+```javascript
+function atMostNGivenDigitSet(digits: string[], n: number): number {
+  const nStr = n.toString();
+  const dp = new Array(nStr.length).fill(0);
+  const memo = [];
+  for (let i = 1, res = 1; i < nStr.length; i++) {
+    memo.push((res = res * digits.length));
+  }
+  for (let i = 0; i < nStr.length; i++) {
+    for (let j = 0; j < digits.length; j++) {
+      if (digits[j] < nStr[nStr.length - 1 - i]) {
+        dp[i] += i > 0 ? memo[i - 1] : 1;
+      } else if (digits[j] == nStr[nStr.length - 1 - i]) {
+        console.log(digits[j], nStr[nStr.length - 1 - i], dp);
+        dp[i] += i > 0 ? dp[i - 1] : 1;
+      }
+    }
+  }
+  return memo.reduce((a, b) => a + b, 0) + dp[dp.length - 1];
+}
+```

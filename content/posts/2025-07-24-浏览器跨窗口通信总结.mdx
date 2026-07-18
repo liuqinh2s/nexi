@@ -1,0 +1,71 @@
+---
+title: 浏览器跨窗口通信总结
+slug: 浏览器跨窗口通信总结
+date: '2025-07-24'
+description: >-
+  window.postMessage()（通用跨域方案） 通过获得目标窗口引用（如
+  window.open()返回对象、iframe.contentWindow 或 window.opener），发送可序列化数据。
+  优势：支持跨域通信，安全性高（需验证 event.origin）。 局限：需预先建立窗口引用关系，无法广播消息。
+tags:
+  - 浏览器
+categories: []
+format: markdown
+comments: true
+---
+## window.postMessage()（通用跨域方案）
+
+通过获得目标窗口引用（如 window.open()返回对象、iframe.contentWindow 或 window.opener），发送可序列化数据。
+
+```JavaScript
+// 发送方
+const targetWindow = window.open('child.html');
+targetWindow.postMessage('Hello', 'https://example.com');
+
+// 接收方
+window.addEventListener('message', (event)=>{
+    if(event.origin === 'https://example.com'){
+        console.log(event.data);
+    }
+})
+```
+
+优势：支持跨域通信，安全性高（需验证 event.origin）。
+局限：需预先建立窗口引用关系，无法广播消息。
+
+<!-- more -->
+
+## BroadcastChannel（同源广播方案）
+
+基于发布-订阅模式，同源窗口通过相同频道名通信：
+
+```JavaScript
+const channel = new BroadcastChannel('news');
+channel.postMessage('Update!');
+channel.onmessage = (event)=>{
+    console.log(event.data);
+}
+```
+
+优势：无需窗口引用，支持一对多广播
+局限：仅限同源窗口，safari 兼容性较差
+
+## Web Storage 事件（存储驱动方案）
+
+利用 localStorage，sessionStorage 存储数，通过 storage 事件监听变更。
+
+```JavaScript
+localStorage.setItem('key', JSON.stringify({data: 'value'}));
+
+window.addEventListener('storage', (event)=>{
+    if(event.key === 'key'){
+        console.log(JSON.parse(event.newValue));
+    }
+})
+```
+
+优势：支持同源多窗口，数据持久化。
+局限：非实时（事件触发延迟约 100ms），仅支持字符串数据。
+
+## SharedWorker（共享线程方案）
+
+## WebSocket（服务端中转方案）

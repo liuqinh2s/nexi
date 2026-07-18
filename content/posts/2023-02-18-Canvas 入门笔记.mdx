@@ -1,0 +1,116 @@
+---
+title: Canvas 入门笔记
+slug: Canvas 入门笔记
+date: '2023-02-18'
+description: >-
+  基础知识 1. 默认大小：如果不设置宽高，canvas 的默认宽高是： width: 300px; height: 150px; 。 2. 替换内容：与
+  元素不同， 元素需要结束标签 ，如果结束标签不存在，则文档的其余部分会被认为是替代内容，将不会显示出来。
+  什么是替换内容，就是在某些东西加载不出来的时候（原因可能多种多样，比如浏览器太老不支持这个东西，比如
+tags:
+  - Canvas
+  - 学习笔记
+categories: []
+format: markdown
+comments: true
+---
+# 基础知识
+
+1. 默认大小：如果不设置宽高，canvas 的默认宽高是：`width: 300px; height: 150px;`。
+2. 替换内容：与`<img>`元素不同，**`<canvas>`元素需要结束标签`</canvas>`**，如果结束标签不存在，则文档的其余部分会被认为是替代内容，将不会显示出来。
+   > 什么是替换内容，就是在某些东西加载不出来的时候（原因可能多种多样，比如浏览器太老不支持这个东西，比如网络不好加载不出），那么就给这些东西替换成其他内容，比如`<img>`标签就有 alt 属性用于在图片加载不出的时候显示文本。`canvas`标签也有相应的措施，用法是：
+
+```html
+<canvas id="stockGraph" width="150" height="150">
+  current stock price: $3.15 +0.15
+</canvas>
+
+<canvas id="clock" width="150" height="150">
+  <img src="images/clock.png" width="150" height="150" alt="" />
+</canvas>
+```
+
+3. 渲染上下文（The rendering context）：常用的渲染上下文有 2D，3D。2d 写法如下:
+
+```javascript
+const canvas = document.getElementById("canvas");
+if (canvas.getContext) {
+  const context = canvas.getContext("2d");
+  // drawing code here
+} else {
+  // canvas-unsupported code here
+}
+```
+
+<!-- more -->
+
+# 2D 绘图
+
+## 坐标系
+
+直角坐标系，原点在左上角，x 轴向右为正，y 轴向下为正。
+
+## 绘制图形
+
+**不同于 SVG，`<canvas>` 只支持两种形式的图形绘制：矩形和路径（由一系列点连成的线段）**。所有其他类型的图形都是通过一条或者多条路径组合而成的。不过，我们拥有众多路径生成的方法让复杂图形的绘制成为了可能。
+
+### 绘制矩形
+
+三种绘制矩形的方法：
+
+1. 绘制一个填充矩形：`fillRect(x, y, width, height)`
+2. 绘制一个矩形边框：`strokeRect(x, y, width, height)`
+3. 清除一个矩形区域，让清除部分完全透明：`clearRect(x, y, width, height)`
+
+### 绘制路径
+
+核心命令 5 个：
+
+1. beginPath() // 开始绘制
+2. moveTo() // 移动画笔
+3. closePath() // 闭合曲线
+4. fill() // 填充曲线
+5. stroke() // 绘制轮廓
+
+> closePath()不是必须的，用 fill()就能自动闭合曲线，但 stroke()不会自动闭合曲线，所以在如果想闭合曲线就要在 stroke()之前 closePath()一下
+
+举个例子：[画三角形](https://replit.com/@liuqinh2s/canvas-practice#index.html)
+
+#### 常见的路径
+
+- 直线：lineTo(x, y)
+- 圆弧：
+  - arc(x, y, radius, startAngle, endAngle, anticlockwise) // startAngle 和 endAngle 单位是弧度
+  - arcTo(x1, y1, x2, y2, radius)
+- 贝塞尔曲线：
+  - 二次贝塞尔曲线：quadraticCurveTo(cp1x, cp1y, x, y)
+  - 三次贝塞尔曲线：bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, y)
+- 矩形：rect(x, y, width, height)
+
+#### Path2D 对象
+
+Path2D 对象用来缓存绘画命令，有三种构造方式：
+
+1. new Path2D(); // 空对象
+2. new Path2D(path); // 克隆一个 Path2D 对象
+3. new Path2D(d); // 从 svg 建立 Path2D 对象，例如：new Path2D("M10 10 h 80 v 80 h -80 Z");
+
+还可以拼接 path：
+
+Path2D.addPath(path, transform?) // 添加一条路径到当前路径，可以设置变换矩阵
+
+[代码示例](https://replit.com/@liuqinh2s/canvas-path2d-practice#script.js)
+
+## 样式和颜色
+
+- fillStyle = color // 填充色
+- strokeStyle = color // 轮廓色
+- globalAlpha = transparencyValue // 透明度，取值范围：0.0（完全透明）到 1.0（完全不透明）
+
+颜色取值的四种写法：
+
+```javascript
+ctx.fillStyle = "orange";
+ctx.fillStyle = "#FFA500";
+ctx.fillStyle = "rgb(255, 165,0 )";
+ctx.fillStyle = "rgba(255, 165, 0, 1)";
+```

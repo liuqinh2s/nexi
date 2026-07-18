@@ -1,0 +1,56 @@
+---
+title: wsl修改右键bash图标
+slug: wsl修改右键bash图标
+date: '2018-09-19'
+description: >-
+  使用 windows subsystem for linux (简称：WSL) 的时候，遇到一个小问题，在文件管理器中右键，唤出 bash，发现图标不对：
+  截图1
+tags:
+  - wsl
+categories: []
+format: markdown
+comments: true
+---
+使用 windows subsystem for linux (简称：WSL) 的时候，遇到一个小问题，在文件管理器中右键，唤出 bash，发现图标不对：
+
+![截图1](https://i.loli.net/2018/09/19/5ba25208ca7de.png)
+
+<!-- more -->
+
+点击之后可以看到调用的是哪个程序：
+
+![截图2](https://i.loli.net/2018/09/19/5ba254dbe66ea.png)
+
+google 一下：`windows 右键图标`，搜到百度经验：[https://jingyan.baidu.com/article/7c6fb428321b4a80642c90fd.html](https://jingyan.baidu.com/article/7c6fb428321b4a80642c90fd.html)，照着修改就行了。
+
+如图：
+
+![截图3](https://i.loli.net/2018/09/19/5ba255cbd964f.png)
+
+那么改成什么呢？google 一下：`wsl bash icon`，搜到：[https://github.com/Microsoft/WSL/issues/1269](https://github.com/Microsoft/WSL/issues/1269)，然后又在这个页面找到了这个：[https://github.com/cmderdev/cmder/issues/1063#issuecomment-401947209](https://github.com/cmderdev/cmder/issues/1063#issuecomment-401947209)
+
+![截图4](https://i.loli.net/2018/09/20/5ba2ffde07591.png)
+
+把 icon 换成：
+
+```
+C:\Program Files\WindowsApps\CanonicalGroupLimited.UbuntuonWindows_1804.2018.817.0_x64__79rhkp1fndgsc\ubuntu.exe
+```
+
+再点击右键，就能看到这个图标了。
+
+除了修改右键显示的 icon，还可以修改右键显示的名字，以及运行的目标程序。
+
+![TIM图片20180920100903.png](https://i.loli.net/2018/09/20/5ba301516885f.png)
+
+改为：
+
+```
+C:\Program Files\WindowsApps\CanonicalGroupLimited.UbuntuonWindows_1804.2018.817.0_x64__79rhkp1fndgsc\ubuntu.exe
+```
+
+但发现无法把工作目录定到当前右键的目录，需要加一个`run`：
+
+```
+C:\Program Files\WindowsApps\CanonicalGroupLimited.UbuntuonWindows_1804.2018.817.0_x64__79rhkp1fndgsc\ubuntu.exe run
+```

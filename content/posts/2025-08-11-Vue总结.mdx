@@ -1,0 +1,36 @@
+---
+title: Vue 总结
+slug: Vue总结
+date: '2025-08-11'
+description: >-
+  Vue 也是比较常用的前端框架，我这篇文章尝试总结一下 Vue 的常用知识点 声明式编程 + 组件式开发 js 原生语言和 JQuery
+  这类库，都是命令式的编程，而 Vue 和 React 这类框架，则是声明式编程，或者说是数据驱动式编程。它们的区别在于是否要手动操作 DOM
+  更新视图。声明式编程只需要关注数据更新，而不用操心 DOM 的更新。 早先的前端
+tags:
+  - Vue
+categories: []
+format: markdown
+comments: true
+---
+Vue 也是比较常用的前端框架，我这篇文章尝试总结一下 Vue 的常用知识点
+
+## 声明式编程 + 组件式开发
+
+js 原生语言和 JQuery 这类库，都是命令式的编程，而 Vue 和 React 这类框架，则是声明式编程，或者说是数据驱动式编程。它们的区别在于是否要手动操作 DOM 更新视图。声明式编程只需要关注数据更新，而不用操心 DOM 的更新。
+
+早先的前端开发都是`html`、`js`、`css`三类文件分离的。如果类比做人体的话，html 就像人体的骨骼，是个架子；js 就像人体的肌肉，可以让人体动起来；css 就像皮肤，负责外观。但现在前端编程又回到了融合它们三个的组件式开发的时代。因为组件式开发，封装性更强，这也意味着维护更简单，使用更方便。
+
+<!-- more -->
+
+## 基本写法
+
+一个组件中，包含三块：`<template></template>`、`<script></script>`、`<style></style>`。分别用来写`html`、`js`、`css`。
+
+## 指令系统（directive）
+
+1. **内置指令**
+   - `v-bind`（缩写`:`）：动态绑定属性（如：`:class="{ active: isActive }"`）
+   - `v-on`（缩写`@`）：事件监听（如：`@onClick="handleClick"`）
+   - `v-model`：表单双向绑定（如：`<input v-model="text" />`）。`v-model`是`v-bind`和`v-on`的组合。
+   - `v-if/v-show`：条件渲染（`v-if`销毁元素，`v-show`隐藏元素）。`v-if`首次渲染开销小，但频繁切换的话会新建和销毁 DOM，开销大；`v-show`首次渲染开销大，但频繁切换的话仅隐藏和显示 DOM，开销小。
+   - `v-for`：列表渲染，必须加`:key`（如：`<li v-for="item in items" :key="item.id" />`），key 不要用数组下标，而是用唯一键。

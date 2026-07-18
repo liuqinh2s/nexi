@@ -1,0 +1,872 @@
+---
+title: 《CSAPP》 -- 程序的机器级表示
+slug: 程序的机器级表示
+date: '2018-10-08'
+description: >-
+  从编译 C 语言文件说起 使用了 gcc 命令来编译，也可以简单写作： cc 。 优化层级为 1，1
+  级是最低的，层级越高程序优化越好，但增加了编译时间，也使调试变得更难，且跟源程序差异很大不便于理解。 编译的流程是： 1.
+  预处理器（preprocessor）把诸如： include 、 define 、 if 、 else 、 elif 、 ifdef 
+tags:
+  - 编程基础
+categories: []
+format: markdown
+comments: true
+---
+## 从编译 C 语言文件说起
+
+```C
+$ gcc -01 -o p p1.c p2.c
+```
+
+使用了 gcc 命令来编译，也可以简单写作：`cc`。
+
+优化层级为 1，1 级是最低的，层级越高程序优化越好，但增加了编译时间，也使调试变得更难，且跟源程序差异很大不便于理解。
+
+编译的流程是：
+
+1. 预处理器（preprocessor）把诸如：`#include`、`#define`、`#if`、`#else`、`#elif`、`#ifdef`、`#endif`等预编译指令替换掉。
+2. 编译器（compiler）把`.c`源文件编译成`.s`的汇编代码文件。
+3. 汇编器（assembler）把汇编代码文件转换成相应的二进制目标文件`.o`，目标文件已经是机器码了，只是没有填入全局变量的地址。
+4. 链接器（linker），把多目标文件和库函数链接在一起，形成可执行文件。
+
+<!-- more -->
+
+**instruction set architecture，ISA，指令集体系结构**，定义了处理器状态，指令的格式和行为。intel 的指令集包括 32 位的：IA32，以及 64 位的：x86-64。
+
+编译器做了整个编译流程的大部分工作，汇编代码几乎就是机器码的供人阅读版。所以看懂汇编代码是关键。
+
+IA32 程序代码和 C 语言很不相同，一些在 C 语言下看不到的处理器状态可以在这里看到：
+
+- 程序计数器（program counter，PC，也叫：instructor pointer，IP）在 IA32 中叫：`%eip`，指出下一条指令在内存中的位置
+- 整数寄存器，可以用来保存数据
+- 状态码寄存器，可以用来实现条件控制代码如：if 和 while
+- 浮点寄存器，用来计算浮点数
+
+## 例子
+
+```C
+int accum = 0;
+
+int sum(int x, int y){
+    int t = x + y;
+    accum += t;
+    return t;
+}
+```
+
+如果要看到编译出的汇编代码，可以使用`-S`选项：
+
+```
+$ gcc -01 -S code.c
+```
+
+这样就会使编译流程停留在 **预处理->编译** 阶段，而不是继续进行接下来的汇编和链接，生成的文件是：`.s`汇编文件。编译后的汇编代码中会包含如下代码：
+
+```
+sum:
+    pushl %ebp
+    movl %esp, %ebp
+    movl 12(%ebp), %eax
+    addl 8(%ebp), %eax
+    addl %eax, accum
+    popl %ebp
+    ret
+```
+
+这段代码中的每一句都对应一个机器指令，比如 pushl 这句的意思就是把寄存器%ebp 的内容 push 到程序栈（内存中）上。**在汇编代码里所有的局部变量都不见了，全局变量还可以看到，因为编译器还没有决定这个变量在内存中的存储位置。**
+
+如果我们使用`-c`选项，GCC 就会既编译又汇编：
+
+```
+$ gcc -01 -c code.c
+```
+
+这样就生成了目标文件`code.o`，在 800bytes 的 code.o 文件中，有 17bytes 是对应上面的汇编代码的：
+
+```
+55 89 e5 8b 45 0c 03 45 08 01 05 00 00 00 00 5d c3
+```
+
+可以使用反汇编将难懂的目标文件代码转成汇编代码：
+
+```
+$ objdump -d code.o
+```
+
+![反汇编](/images/legacy/2018/反汇编.png)
+
+- IA32 指令的长度是 1 到 15 字节，越常用的，操作数越少的指令越短，反之则越长。
+- 给定一个开始的位置，只对应一种机器指令，比如只有`pushl %ebp`指令是以 55 开头的
+- 反汇编只需要根据目标文件就可以翻译出汇编文件
+- 反汇编出来的文件跟直接编译的汇编文件有些不一样，比如所有指令都省略了后缀`l`。`l`是大小指示符，而大多数情况下是可以省略 l 的。
+
+> 头两个属性跟[哈夫曼编码](https://zh.wikipedia.org/wiki/%E9%9C%8D%E5%A4%AB%E6%9B%BC%E7%BC%96%E7%A0%81)的原理是一致的，可以说这是一种通用的编码原则，第一条用来保证节省字节空间，第二条则保证编码的唯一性。
+
+生成真正可执行的文件还需要链接操作，而且必须包含 main 函数。假设我们的`main.c`文件如下：
+
+```C
+int main(){
+    return sum(1, 3);
+}
+```
+
+我们可以使用如下指令生成可执行文件：
+
+```
+$ gcc -01 -o prog code.o main.c
+```
+
+prog 文件增长到了 9123bytes，因为它不仅包含我们写的代码，而且包含了用来开始和结束的程序，以及与操作系统进行交互的程序。
+
+![链接之后的反汇编代码1](/images/legacy/2018/链接之后的反汇编代码1.png)
+
+![链接之后的反汇编代码2](/images/legacy/2018/链接之后的反汇编代码2.png)
+
+可以看到第 6 行，全局变量在链接的时候定址。
+
+## 汇编代码的格式
+
+假设我们有一个 C 语言文件`simple.c`：
+
+```C
+int simple(int *xp, int y) 2{
+    int t = *xp + y;
+    *xp = t;
+    return t;
+}
+```
+
+可以得到如下汇编代码：
+
+```
+.file   "simple.c"
+  .text
+.globl simple
+  .type   simple, @function
+simple:
+  pushl   %ebp
+  movl    %esp, %ebp
+  movl    8(%ebp), %edx
+  movl    12(%ebp), %eax
+  addl    (%edx), %eax
+  movl    %eax, (%edx)
+  popl    %ebp
+  ret
+  .size   simple, .-simple
+  .ident  "GCC: (Ubuntu 4.3.2-1ubuntu11) 4.3.2"
+  .section        .note.GNU-stack,"",@progbits
+```
+
+所有以`.`开头的行都是用来指导汇编器和链接器的，我们不用去管。而这段代码的大概意思如下：
+
+```
+simple:
+    pushl %ebp           保存帧指针
+    movl  %esp, %ebp     创建新的帧指针
+    movl  8(%ebp), %edx  从内存中读取xp
+    movl  12(%ebp), %eax 从内存中读取y
+    addl  (%edx), %eax   *xp+y=t
+    movl  %eax, (%edx)   把t存到xp指向的地址中
+    popl  %ebp           重新获取帧指针
+    ret                  返回
+```
+
+> 这段代码对%ebp 和%esp 的操作涉及到了程序栈模型，看不懂很正常，文章下面会有讲解的。
+
+### ATT 和 intel 汇编格式
+
+ATT 即 AT&T，是贝尔实验室旗下的公司。
+
+GCC 和 OBJDUMP 默认生成 ATT 格式的汇编代码，微软和因特尔的编程工具则默认生成 intel 格式的汇编代码。
+
+使用如下命令可以让 GCC 生成 intel 格式的代码：
+
+```
+$ gcc -01 -S -masm=intel code.c
+```
+
+两者的区别如下：
+
+- intel 代码省略了用来指定大小的后缀，比如使用`mov`而不是`movl`
+- intel 代码省略了寄存器前面的%，比如使用`esp`而不是`%esp`
+- intel 代码用了不同的方式来描述内存地址，比如使用`DWORD PTR [ebp+8]`而不是`8(%ebp)`
+- intel 代码多操作数指令的操作数顺序跟 ATT 相反
+
+由于是由 16bit 架构扩展到 32bit 架构的，intel 管 16bit 数据类型叫：`word`，32bit 数据类型叫：`double words`，64bit 数据类型叫：`quad words`。
+
+## 数据格式
+
+![数据格式](/images/legacy/2018/数据格式.png)
+
+## 访问数据
+
+IA32 CPU 包含了 8 个寄存器，每个有 32bit 存储空间，用来存储整形值以及指针。
+
+![IA32寄存器](/images/legacy/2018/IA32寄存器.png)
+
+x86-64 则进一步扩展了这些寄存器：
+
+![x86-64寄存器](/images/legacy/2018/x86-64寄存器.jpg)
+
+前六个寄存器称为通用寄存器，有其特定的用途：
+
+- %rax(%eax) 用于做累加，过程调用返回值
+- %rcx(%ecx) 用于计数
+- %rdx(%edx) 用于保存数据
+- %rbx(%ebx) 用于做内存查找的基础地址
+- %rsi(%esi) 用于保存源索引值
+- %rdi(%edi) 用于保存目标索引值
+
+### 操作数指示符
+
+![操作数指示符](/images/legacy/2018/操作数指示符.png)
+
+有三种类型的操作数，立即数(Imm)、寄存器值(Reg)、内存值(Mem)。
+
+### mov 指令
+
+![mov指令](/images/legacy/2018/mov指令.png)
+
+![汇编栈操作](/images/legacy/2018/汇编栈操作.png)
+
+`pushl %ebp`指令等价于下面的指令：
+
+```
+subl $4,%esp     减小栈指针
+movl %ebp,(%esp) 把%ebp中的数据写到%esp指向的内存中
+```
+
+`popl %eax`指令等价于下面的指令：
+
+```
+movl (%esp), %ebp  把%esp指向的内存地址中的值读到%eax中
+addl $4, %esp      增加栈指针
+```
+
+## 算术和逻辑操作
+
+load effective address，leal 指令，实际上是一个 movl 指令。
+
+![算术和逻辑操作指令](/images/legacy/2018/算术和逻辑操作指令.png)
+
+多个操作数的指令，注意一下两个操作数的顺序即可
+
+### 位移操作
+
+位移的值是用一个单字节来表示，且数值只能是 0 到 31，所以这个字节只有低五位才会被考虑。
+
+### 扩展乘除指令
+
+![扩展乘除操作](/images/legacy/2018/扩展乘除操作.png)
+
+## 控制
+
+### 状态码
+
+使用单比特的状态码来描述算数和逻辑运算的状态。最常用的状态码如下：
+
+- CF: carry flag 进位符，用来表示最高位的进位。通常用来检测无符号运算的溢出
+- ZF: zero flag，零标志符，最近的操作产生了 0
+- SF: sign flag，符号位，最近的操作产生了负数
+- OF: overflow flag，溢出符，补码溢出，正负都可以，表示有符号溢出
+
+![流程控制指令](/images/legacy/2018/流程控制指令.png)
+
+举个例子：t=a+b，a、b、t 都是整形数。
+
+```
+CF: (unsigned)t<(unsigned)a       无符号溢出
+ZF: (t==0)                        零
+SF: (t<0)                         负数
+OF: (a<0 == b<0) && (t<0 != a<0)  有符号溢出
+```
+
+> OF 的表达式也可以写作：(a<0 && b<0 && t>0) || (a>0 && b>0 && t<0)，也就是说 a、b 都是负数相加却是正数，或者 a、b 都是正数相加却是负数，这两种情况就代表溢出了。
+
+leal 操作不会改变状态码，因为这个指令只是用来计算地址。除此之外表 3.7 中的所有操作都可能改变状态码。例如逻辑操作：XOR，会使 CF 和 OF 置零，移位操作会使 CF 置为最后一个移位出去的 bit，但 OF 要置零。自增和自减指令会设置 OF 和 ZF，不设置 CF。
+
+CMP 指令类似于 SUB 指令，但只修改状态码而不改变其他寄存器，如果两个操作数相等，ZF 就会被设置；TEST 指令类似于 AND 指令，但只修改状态码而不改变其他寄存器，如果两个操作数是重复的： testl %eax,%eax，作用是检测%eax 是 0，还是正数，还是负数。
+
+### 访问状态码
+
+有三种常用的方式访问状态码：
+
+1. 根据几个状态码的逻辑组合，设置单个字节为 0 或 1，也就是 set 指令
+2. 根据状态码，跳转到程序的其他分支
+3. 根据状态码传送数据
+
+![set指令](/images/legacy/2018/set指令.png)
+
+举个例子：计算`a<b`，a 和 b 都是 int 型
+
+```
+a is in %edx, b is in %eax
+cmpl   %eax, %edx       Compare a:b
+setl   %al              Set low order byte of %eax to 0 or 1
+movzbl %al, %eax        Set remaining byte of %eax to 0
+```
+
+setl 指令是：`D <- SF^OF`，也就是有两种情况代表 `a-b<0`：
+
+1. OF=0（a-b 没有发生溢出），且 SF=1（a-b 结果为负）
+2. OF=1（a-b 发生了溢出），且 SF=0（a-b 结果为非负）
+
+第二种情况比较复杂，需要简单分析一下。a-b 发生了溢出，有两种情况：**正溢出和负溢出**。负溢出：a 是负数，b 是正数，但 a-b 结果为正（结果小于了最小的负数，发生溢出）；正溢出：a 是正数，b 是负数，但 a-b 结果为负（结果大于了最大的正数，发生溢出）。
+
+比如：
+
+```
+-128： 1000 0000
+127:   0111 1111
+-127:  1000 0001
+```
+
+a=-128, b=127, a-b=-128-127= $(1 0000 0001)_2$ , 从结果上来看就变成了 1（正数），这就是负溢出
+
+a=127, b=-127, a-b=127-(-127) = $(1111 1110)_2$ , 从结果上来看就变成了 -2（负数），这就是正溢出
+
+OF=1, SF=0，就是负溢出，而负溢出代表着 a 是负数，b 是正数，也就是`a<b`
+
+其他三个有符号比较以此类推。
+
+### 跳转指令
+
+![跳转指令](/images/legacy/2018/跳转指令.png)
+
+可以看到条件跳转必须是直接的，而无条件跳转可以使用操作数。
+
+跳转位置的编码有两种：
+
+1. 借助 PC 使用相对定位
+2. 使用绝对定位
+
+实例如下：
+
+```
+jle .L2                  if <=, goto dest2
+  .L5:                   dest1:
+  movl %edx, %eax
+  sarl %eax
+  subl %eax, %edx
+  leal (%edx,%edx,2), %edx
+  testl %edx, %edx
+jg .L5                   if >, goto dest1
+  .L2:                   dest2:
+   movl %edx, %eax
+```
+
+目标文件和汇编文件对应如下：
+
+```
+8: 7e 0d                 jle 17 <silly+0x17> Target = dest2
+a: 89 d0                 mov %edx,%eax dest1:
+c: d1 f8                 sar %eax
+e: 29 c2                 sub %eax,%edx
+10: 8d 14 52             lea (%edx,%edx,2),%edx
+13: 85 d2                test %edx,%edx
+15: 7f f3                jg a <silly+0xa> Target = dest1
+17: 89 d0                mov %edx,%eax dest2:
+```
+
+对应的关系是：`0xd+0xa=0x17`，`0xf3+0x17=0xa`，为什么是加下一条指令的地址而不是当前指令呢？这个传统要追溯到计算机的早期实现，当时的处理器会在执行每一条指令之前先更新一下 PC（program counter）。
+
+```
+804839c: 7e 0d           jle 80483ab <silly+0x17>
+804839e: 89 d0           mov %edx,%eax
+80483a0: d1 f8           sar %eax
+80483a2: 29 c2           sub %eax,%edx
+80483a4: 8d 14           52 lea (%edx,%edx,2),%edx
+80483a7: 85 d2           test %edx,%edx
+80483a9: 7f f3           jg 804839e <silly+0xa>
+80483ab: 89 d0           mov %edx,%eax
+```
+
+从反汇编代码来看，**跳转如果使用 PC 相对地址，则不管代码存储到内存中的哪个位置，跳转的地址都不需要修改，且需要的编码更短**。
+
+### 翻译条件分支
+
+```
+if(test-expr)
+  then-statement
+else
+  else-statement
+```
+
+先写成等价的 goto 版本，然后就可以很轻松的转成汇编了
+
+```
+t=test-expr;
+if(!t)
+  goto false;
+  then-statement
+  goto done;
+false:
+  else-statement
+done:
+```
+
+从汇编的角度看 `&&短路` 原理：
+
+```
+void cond(int a, int *p)
+{
+  if (p && a > 0)
+  *p += a;
+}
+```
+
+```
+a %ebp +8, p at %ebp +12
+
+movl 8(%ebp), %edx
+movl 12(%ebp), %eax
+testl %eax, %eax
+je .L3
+testl %edx, %edx
+jle .L3
+addl %edx, (%eax)
+.L3:
+```
+
+可以看到第一个条件通不过的时候就跳过了第二个条件判断。
+
+### 循环
+
+#### do while
+
+```
+do
+  body-statement
+  while(test-expr)
+```
+
+goto 版本：
+
+```
+loop:
+  body-statement
+  t = test-expr;
+  if (t)
+goto loop;
+```
+
+![while的汇编形式](/images/legacy/2018/while的汇编形式.png)
+
+#### while
+
+```
+while (test-expr)
+  body-statement
+```
+
+先转成 do while 形式：
+
+```
+if (!test-expr)
+  goto done;
+do
+  body-statement
+  while (test-expr);
+done:
+```
+
+在把 do while 转成 goto 版：
+
+```
+t = test-expr;
+if (!t)
+  goto done;
+loop:
+  body-statement
+  t = test-expr;
+  if (t)
+    goto loop;
+done:
+```
+
+#### for
+
+```
+for (init-expr; test-expr; update-expr)
+  body-statement
+```
+
+先转成 while 形式：
+
+```
+init-expr;
+while (test-expr) {
+  body-statement
+  update-expr;
+}
+```
+
+然后转成 do while 形式：
+
+```
+init-expr;
+if (!test-expr)
+  goto done;
+do {
+  body-statement
+  update-expr;
+} while (test-expr);
+done:
+```
+
+最后转成 do while 的 goto 版本：
+
+```
+init-expr;
+t = test-expr;
+if (!t)
+  goto done;
+loop:
+  body-statement
+  update-expr;
+  t = test-expr;
+  if (t)
+    goto loop;
+done:
+```
+
+### 状态转移指令
+
+![状态表达式](/images/legacy/2018/状态表达式.png)
+
+![状态转移指令](/images/legacy/2018/状态转移指令.png)
+
+```
+v = test-expr ? then-expr : else-expr;
+```
+
+goto 版：
+
+```
+if (!test-expr)
+  goto false;
+v = true-expr;
+goto done;
+false:
+  v = else-expr;
+done:
+```
+
+### switch
+
+switch 主要使用了跳转表：
+
+```C
+int switch_eg(int x, int n) {
+  int result = x;
+  switch (n) {
+    case 100:
+      result *= 13;
+      break;
+    case 102:
+      result += 10;
+      /* Fall through */
+    case 103:
+      result += 11;
+      break;
+    case 104:
+    case 106:
+      result *= result;
+      break;
+    default:
+      result = 0;
+  }
+  return result;
+}
+```
+
+```C
+int switch_eg_impl(int x, int n) {
+  /* Table of code pointers */
+  static void *jt[7] = {
+    &&loc_A, &&loc_def, &&loc_B,
+    &&loc_C, &&loc_D, &&loc_def,
+    &&loc_D
+  };
+  unsigned index = n - 100;
+  int result;
+  if (index > 6)
+    goto loc_def;
+
+  /* Multiway branch */
+  goto *jt[index];
+
+  loc_def: /* Default case*/
+    result = 0;
+    goto done;
+
+  loc_C: /* Case 103 */
+    result = x;
+    goto rest;
+
+  loc_A: /* Case 100 */
+    result = x * 13;
+    goto done;
+
+  loc_B: /* Case 102 */
+    result = x + 10;
+    /* Fall through */
+
+  rest: /* Finish case 103 */
+    result += 11;
+    goto done;
+
+  loc_D: /* Cases 104, 106 */
+    result = x * x;
+    /* Fall through */
+
+  done:
+    return result;
+}
+```
+
+汇编代码如下：
+
+![switch汇编代码](/images/legacy/2018/switch汇编代码.png)
+
+![switch跳转表1](/images/legacy/2018/switch跳转表1.png)
+
+![switch跳转表2](/images/legacy/2018/switch跳转表2.png)
+
+跳转表的步长是 4
+
+> .rodata 的意思是：read only data
+
+## 过程调用
+
+![程序栈内存结构](/images/legacy/2018/程序栈内存结构.png)
+
+有以下几个要点：
+
+1. 栈是倒着长的
+2. 每个过程调用都有一个 stack frame，栈帧
+3. 栈顶帧用两个指针来维护，一个是帧起址：%ebp，一个是栈指针：%esp 指向栈顶。
+
+%esp 在过程运行的时候可能会被抹掉，这时候可以通过%ebp 来定位。
+
+可以看到返回地址在每一帧的最后。而每一帧的第一个位置存放着上一帧的帧起址%ebp。帧的中间则放置局部变量、过程参数等值。
+
+有以下几种情况会将局部变量放到栈帧中：
+
+1. 局部变量多到寄存器放不下
+2. 局部变量是数组或者结构体，必须用到引用
+3. 局部变量使用了取址符`&`，所以我们必须给它生成地址
+
+### 转移控制
+
+![转移控制指令](/images/legacy/2018/转移控制指令.png)
+
+call 指令的效果是：把返回地址 push 到栈中，然后跳到调用程序的地址（也就是把 PC 设置一下）。**返回地址**是汇编代码中 call 指令后面那条指令的地址。
+
+ret 指令把栈顶的返回地址 pop 出来，并跳转到这个地址。
+
+![程序调用模型](/images/legacy/2018/程序调用模型.png)
+
+### 寄存器使用传统
+
+%eax, %edx, %ecx 是调用者保存寄存器。也就是说当过程 Q 被过程 P 调用，过程 Q 可以随意的写这三个寄存器，因为在调用 Q 之前 P 必须保存这三个寄存器的值。
+
+%ebx, %esi, %edi 是被调用者保存寄存器。也就是说在过程 Q 写这些寄存器之前，必须保存里面的值，并在 return 之前恢复原样。
+
+### 过程调用例子
+
+```
+int swap_add(int *xp, int *yp)
+{
+  int x = *xp;
+  int y = *yp;
+
+  *xp = y;
+  *yp = x;
+  return x + y;
+}
+
+int caller()
+{
+  int arg1 = 534;
+  int arg2 = 1057;
+
+  int sum = swap_add(&arg1, &arg2);
+  int diff = arg1 - arg2;
+  return sum * diff;
+}
+```
+
+![过程调用内存模型](/images/legacy/2018/过程调用内存模型.png)
+
+一些编程语言，比如 Pascal，提供了值传参和引用传参。但 C 语言只有值传参，C++提供了引用传参。C 语言可以通过指针来实现引用传参。
+
+![过程调用汇编代码](/images/legacy/2018/过程调用汇编代码.png)
+
+总共申请了 24 字节的空间，8 字节用来存局部变量，8 字节用来存参数，还有 8 字节未使用。
+
+> 为什么要浪费 8 字节，原因是：内存对齐。GCC 遵循一个 x86 编程方针：栈空间必须是 16 的整数倍，包括保存%ebp 的 4 字节和返回地址的 4 字节。这里总共加起来是 24 字节，所以需要额外的 8 字节填充成 32 字节。
+
+swap_add 的汇编代码如下：
+
+分为三个部分：setup、body、finish
+
+setup:
+
+```
+swap_add:
+  pushl %ebp                  Save old %ebp
+  movl %esp, %ebp             Set %ebp as frame pointer
+  pushl %ebx                  Save %ebx
+```
+
+首先要保存调用者的帧基指针，然后重新设置当前帧基指针，然后如果用到%ebx,%esi,%edi 等寄存器就需要保存。
+
+body:
+
+```
+movl 8(%ebp), %edx            Get xp
+movl 12(%ebp), %ecx           Get yp
+movl (%edx), %ebx             Get x
+movl (%ecx), %eax             Get y
+movl %eax, (%edx)             Store y at xp
+movl %ebx, (%ecx)             Store x at yp
+addl %ebx, %eax               Return value = x+y
+```
+
+获取参数，进行计算。
+
+finish:
+
+```
+popl %ebx                     Restore %ebx
+popl %ebp                     Restore %ebp
+ret                           Return
+```
+
+恢复两个寄存器，同时%esp 回到了上一个帧的栈顶，指向了返回地址，然后 ret 指令就可以把 PC 置为返回地址了，这样就完成了控制权的转移。
+
+然后执行调用完 swap_add 之后的代码：
+
+```
+movl -4(%ebp), %edx
+subl -8(%ebp), %edx
+imull %edx, %eax
+leave
+ret
+```
+
+leave 指令的作用是重置栈指针和帧指针，也可以使用 popl 来重置，很简单：
+
+```
+//使%esp指向%ebp的地址（也就是Saved %ebp那里）
+movl %ebp, %esp
+//popl指令会导致%esp+4，所以%esp之后会指向上一帧的帧尾（也就是Return Address那里），popl的内容则放到了%ebp里面
+popl %ebp
+```
+
+而之后的`ret`指令继续将`Return Address` pop 出来，并将`Return Address`放到 PC 中。
+
+从这个例子我们可以看出，编译器遵循一组简单的惯例来管理栈结构。
+
+1. 通过%ebp 加偏移量（+8,+12,...）访问参数
+2. 通过 push 指令或者栈指针减偏移量来分配栈空间
+3. 在返回前恢复保存好的寄存器，并使栈指针指向调用者的返回地址（Return Address）
+
+数组、多维数组、结构体、联合体这些都比较简单，这里略过。
+
+> 要注意的点：只有 call 才会 push 一个返回地址，所以 swap_add 的栈帧中并没有返回地址，说明它没有调用其他函数
+
+## 指针
+
+每种数据类型都有对应的指针类型，但指针类型不是机器码的一部分，只是 C 语言提供的一种抽象，帮助程序员避免犯错。
+
+## 内存引用越界和缓冲区溢出
+
+我们可以看到 C 语言对数组引用没有任何边界检查，而且栈里面既保存了局部变量又保存了寄存器值以及返回地址。所以一旦数组越界写就会破坏整个程序的运行。
+
+看下面这个例子：
+
+```C
+/* Sample implementation of library function gets() */
+char *gets(char *s)
+{
+  int c;
+  char *dest = s;
+  int gotchar = 0; /* Has at least one character been read? */
+  while ((c = getchar()) != '\n' && c != EOF) {
+    *dest++ = c; /* No bounds checking! */
+    gotchar = 1;
+  }
+  *dest++ = '\0'; /* Terminate string */
+  if (c == EOF && !gotchar)
+  return NULL; /* End of file or error */
+  return s;
+}
+
+/* Read input line and write it back */
+void echo()
+{
+  char buf[8]; /* Way too small! */
+  gets(buf);
+  puts(buf);
+}
+```
+
+这段 C 语言代码对应的汇编代码如下：
+
+![gets缓冲区溢出](/images/legacy/2018/gets缓冲区溢出.png)
+
+分配数组空间的时候是直接固定了 8 字节，这里给 buf 分配的空间也是 8 字节：`leal -12(%ebp), %ebx`，并把 buf 作为参数放置于栈顶。
+
+![缓冲区溢出内存模型](/images/legacy/2018/缓冲区溢出内存模型.png)
+
+我们可以看到，当读写 buf[8]的时候，实际上是在读写`Saved %ebx`。
+
+![缓冲区攻击范围](/images/legacy/2018/缓冲区攻击范围.png)
+
+通常给被攻击的程序输入一个字符串，这个字符串包含了可执行代码的字节编码，如果我们通过缓冲区溢出修改了返回地址，那么 ret 指令就可以跳转到我们攻击代码的位置。
+
+> 蠕虫（worms）和病毒（viruses）的区别：相同点：都可以复制和传播自身，不同点：蠕虫可以自己运行，病毒是把自己加入到其他程序中，包括操作系统代码，病毒是不能独立运行的。
+
+### 对抗缓冲区溢出攻击的方法
+
+#### 栈随机化
+
+攻击者需要插入攻击代码（一个字符串），并知道攻击代码的位置（也就是字符串存放的栈地址），而且指向这段字符串的指针也是这个字符串的一部分。如果栈的位置是固定的，那么就很容易猜到攻击代码的存放位置。用如下代码可以检测栈的位置：
+
+```C
+int main() {
+  int local;
+  printf("local at %p\n", &local);
+  return 0;
+}
+```
+
+只需要打印一个局部变量的地址。
+
+栈随机化的思想是程序每次运行时栈的位置都不一样，实现方式是：程序开始时，在栈上分配一段 0~n 字节之间的随机大小的空间，例如使用`alloca`可以在栈上分配空间。程序不使用这段空间，它的作用是使后续栈的位置发生变化。分配的 n 必须足够大，这样才能有足够多的变化，但又必须足够小，这样才不会浪费空间。
+
+栈随机化是更大一类技术的一种，这类技术称为：Address-Space Layout Randomization，ASLR，地址空间布局随机化。但攻击者还是可以采取一定措施来增加攻击成功率，一种常见的手段就是在攻击代码前中插入很长一段的`nop`指令，这个指令只会使程序计数器（PC）加一，除此之外没有任何副作用。只要攻击者能够猜中这段序列中的某个地址，就可以顺利到达攻击代码。这个序列的常用术语是：**nop sled 空操作雪橇**。
+
+#### 栈破坏检测
+
+在局部缓冲区和栈状态之间插入一个随机的金丝雀值（也叫哨兵值），一旦发现这个值被改变，就说明缓冲区溢出了，那么就可以将程序异常中止。
+
+> 攻击者只有输入局部缓冲区变量的权限，所以无从得知金丝雀值。
+
+![金丝雀值](/images/legacy/2018/金丝雀值.png)
+
+GCC 默认就会插入金丝雀值，如果不想要可以使用参数：`-fno-stack-protector`来阻止 GCC 产生这种代码。当不使用此参数时，产生代码如下：
+
+![含金丝雀值汇编码1](/images/legacy/2018/含金丝雀值汇编码1.png)
+
+![含金丝雀值汇编码2](/images/legacy/2018/含金丝雀值汇编码2.png)
+
+指令参数`%gs20, %eax`指明金丝雀值使用 segmented addressing（段寻址）从存储器中读入。将段标志为只读，这样攻击者就不能同时修改段中的金丝雀值。最后使用`xorl`比较段和栈中的金丝雀值，如果不相等则`call __stack_chk_fail`。
+
+这种做法可以带来很小的性能损失。
+
+#### 限制可执行代码区域
+
+在典型的程序中，只有保存编译器产生的代码的那一部分存储空间才需要是可执行的。其他部分可以被限制为只允许读写。虚拟存储器空间在逻辑上分成了页（page），典型的每页是 2048 或者 4096 字节。由硬件提供存储器保护。以前，x86 体系结构将读和执行访问控制合并成一个 1 位标志，所以任何被标记为可读的部分也是可执行的，当然也有很多机制可以限制一些页是可读的但是不可执行，然而这些机制都很消耗性能。最近，AMD（Advanced Micro Devices）为它的 64 位处理器的内存加入了 NX, No-eXecute，不可执行位，intel 也跟进了，检查页是否可执行由硬件来完成，效率上没有任何损失。

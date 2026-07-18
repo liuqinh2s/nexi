@@ -1,0 +1,59 @@
+---
+title: 值传递和引用传递
+slug: 值传递和引用传递
+date: '2017-03-29'
+description: Java 没有引用传递，本质上都是值传递，只不过传递的值可以是指针（Java 没有指针，所以你也可以理解为对象，其实本质上还是指针）。
+tags:
+  - 编程基础
+categories: []
+format: markdown
+comments: true
+---
+Java 没有引用传递，本质上都是值传递，只不过传递的值可以是指针（Java 没有指针，所以你也可以理解为对象，其实本质上还是指针）。
+
+```java
+public class Solution {
+
+    private void getString(String text){
+        text = "hello";
+    }
+
+    public static void main(String[] args) {
+        Solution solution = new Solution();
+        String text = "world";
+        solution.getString(text);
+        System.out.println(text);
+    }
+}
+```
+
+<!-- more -->
+
+text 本质上是一个指针，而 getString 中的 text 则是另一个指针（一个局部变量），所以这里实际上有两个不同的 text，而我们实际上改变的就是一个局部变量。所以输出结果是：world。也可以理解为形参和实参不是同一个对象，形参是一个局部变量，存在于寄存器或者当前栈帧，实参存在于上一级栈帧，而被调用的函数，在它的执行过程中不会改变上一层栈帧的实参。
+
+如果深入了解了 C 语言程序栈的构造，就能彻底明白函数调用的细节：[过程调用](https://liuqinh2s.github.io/blog/2018/10/08/%E7%A8%8B%E5%BA%8F%E7%9A%84%E6%9C%BA%E5%99%A8%E7%BA%A7%E8%A1%A8%E7%A4%BA/#%E8%BF%87%E7%A8%8B%E8%B0%83%E7%94%A8)
+
+值传递和引用传递是每个刚开始写代码的程序员的必经之坑，比如经典的 swap 函数交换，就是一个大坑：
+
+```java
+public class Solution {
+
+    private void swap(String text1, String text2){
+        String temp = text1;
+        text1 = text2;
+        text2 = temp;
+    }
+
+    public static void main(String[] args) {
+        Solution solution = new Solution();
+        String text1 = "world";
+        String text2 = "hello";
+        solution.swap(text1, text2);
+        System.out.println(text1+" "+text2);
+    }
+}
+```
+
+输出是：world hello
+
+实际上我觉得这应该算得上是编程语言底层设计影响到上层使用的一个例子，不是那么自然，比较容易让人困惑。可以算作是一种封装的失败吧。补救方法在 C 中是使用指针，C++中是使用引用，Java 中是使用对象（把要改变的变量作为对象的一个属性）。

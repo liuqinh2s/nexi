@@ -1,0 +1,60 @@
+---
+title: HTTP 和 HTTPS 的区别
+slug: HTTP和HTTPS的区别
+date: '2022-08-12'
+description: >-
+  1. HTTP 使用 80 端口，HTTPS 使用 443 端口 2. HTTPS 需要申请证书 3. HTTP 是超文本传输协议，是明文传输；HTTPS
+  是经过 SSL 加密的协议，传输更安全 4. HTTPS 比 HTTP 慢，因为 HTTPS 除了 TCP 握手的三个包，还要加上 SSL 握手的 9 个包
+  HTTPS 的加密过程 参考 https://
+tags:
+  - 计算机网络
+categories: []
+format: markdown
+comments: true
+---
+1. HTTP 使用 80 端口，HTTPS 使用 443 端口
+2. HTTPS 需要申请证书
+3. HTTP 是超文本传输协议，是明文传输；HTTPS 是经过 SSL 加密的协议，传输更安全
+4. HTTPS 比 HTTP 慢，因为 HTTPS 除了 TCP 握手的三个包，还要加上 SSL 握手的 9 个包
+
+# HTTPS 的加密过程
+
+## 参考
+
+https://blog.csdn.net/xiaopang_yan/article/details/78709574
+
+https://www.ruanyifeng.com/blog/2014/09/ssl-latency.html
+
+加密者，解密者
+
+## 对称加密
+
+使用同一份密钥
+
+## 非对称加密
+
+加密者使用私钥加密，解密者用公钥解密，没有私钥，解不开用公钥加密的内容。
+
+## 数字证书
+
+操作系统内置数字证书，其目的是提前把值得信赖的公钥获取到，保证了公钥的真实。
+
+## HTTPS 的 SSL 握手流程
+
+客户端 → 服务器：你好
+
+服务器 → 客户端：你好，我是服务器，这是我的数字证书
+
+客户端 → 服务器：向我证明你就是我要访问的服务器
+
+服务器 → 客户端：hello world{hello wolrd}[私钥|RSA]
+
+> {}中的内容是非对称加密后的内容，[|]表示用什么私钥，什么加密算法，进行加密
+
+客户端 → 服务器：{我们后面的通信过程，用对称加密来进行，算法：xxx，密钥：xxx}[公钥|RSA]
+
+服务器 → 客户端：{收到}[密钥|对称加密算法]
+
+客户端 → 服务器：{我的账号是：xxx，密码是：xxx，把我的余额发送给我看看}[密钥|对称加密算法]
+
+服务器 → 客户端：{你的余额是：xxx}[密钥|对称加密]

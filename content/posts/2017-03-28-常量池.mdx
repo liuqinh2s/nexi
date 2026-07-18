@@ -1,0 +1,55 @@
+---
+title: 常量池
+slug: 常量池
+date: '2017-03-28'
+description: >-
+  字符串由 char 数组实现，字符串以 0 结尾， 0 是 ASCII 的第一个字符，用 bit 表示也就是： 0000 0000
+  ，这可以方便我们找到字符串的结尾。 ASCII 字符由一个字节表示，实际上第一版的 ASCII 字符只用到了 7 个 bit，128 个字符，扩展版的
+  ASCII 使用了 8 个 bit。 为了节省内存，C/C++把常量字符串放
+tags:
+  - 编程基础
+categories: []
+format: markdown
+comments: true
+---
+字符串由 char 数组实现，字符串以`\0`结尾，`\0`是 ASCII 的第一个字符，用 bit 表示也就是：`0000 0000`，这可以方便我们找到字符串的结尾。
+
+> ASCII 字符由一个字节表示，实际上第一版的 ASCII 字符只用到了 7 个 bit，128 个字符，扩展版的 ASCII 使用了 8 个 bit。
+
+```c++
+char str[11];
+strcpy(str, "0123456789\0");
+```
+
+为了节省内存，C/C++把常量字符串放到常量池中，当几个指针被赋值了相同的字符串常量时，实际上它们会指向相同的内存地址。但用常量字符串初始化数组，情况却不同。
+
+<!-- more -->
+
+```c++
+int _tmain(int argc, _TCHAR* argv[]){
+    char str1[] = "hello world";
+    char str2[] = "hello world";
+
+    char* str3 = "hello world";
+    char* str4 = "hello world";
+
+    if(str1==str2){
+        printf("str1 and str2 are same.\n");
+    }else{
+        printf("str1 and str2 are not same.\n");
+    }
+
+    if(str3==str4){
+        printf("str3 and str4 are same.\n");
+    }else{
+        printf("str3 and str4 are not same.\n");
+    }
+    return 0;
+}
+```
+
+输出：
+str1 and str2 are not same.
+str3 and str4 are same.
+
+常量池虽然好用，但这样会造成一个问题，就是我们拿其中一个指针改了字符串内容，就会造成另一个指针指向的字符串也变了。为此像 C#和 Java 等语言都将字符串类型设为不可变对象，改变字符串实际上是新建了一个字符串，这样就不会引起冲突了。但如果需要不停的改变就要不停的新建，这样就太影响效率，所以又提供了`StringBuilder`类，这个类是支持在原字符串上改动的。

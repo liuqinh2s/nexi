@@ -1,0 +1,41 @@
+---
+title: 浏览器 storage 事件
+slug: 浏览器storage事件
+date: '2022-06-08'
+description: >-
+  官方文档：https://developer.mozilla.org/zh CN/docs/Web/API/Window/storage event 在使用
+  storage 事件的时候，我发现了两个不符合我直觉的特性： 1. 在本窗口修改存储区域（localStorage 或
+  sessionStorage）时，本窗口的监听无效 2. 必须写入与旧值不同的值，
+tags:
+  - 前端
+categories: []
+format: markdown
+comments: true
+---
+官方文档：https://developer.mozilla.org/zh-CN/docs/Web/API/Window/storage_event
+
+在使用 storage 事件的时候，我发现了两个不符合我直觉的特性：
+
+1. 在本窗口修改存储区域（localStorage 或 sessionStorage）时，本窗口的监听无效
+2. 必须写入与旧值不同的值，才能监听到
+
+我自己写代码测试了以上两个特点，但疑惑的是中文文档里面什么都没讲，原来英文文档里面说了这两点，MDN 的中文文档和英文文档并不是翻译关系，完全就是另写的。所以如果觉得文档有问题，还是切换到英文看吧。
+
+<!-- more -->
+
+# 英文文档的解释
+
+The storage event of the Window interface fires when a storage area (localStorage) has been **modified in the context of another document**.
+
+> Note: **This won't work on the same page that is making the changes** — it is really a way for other pages on the domain using the storage to sync any changes that are made. Pages on other domains can't access the same storage objects.
+
+# 测试代码
+
+```JavaScript
+// 设置监听
+window.addEventListener('storage', ()=>{console.log('监听storage', localStorage.getItem('abcd'))});
+// 查看dom有哪些监听事件
+getEventListeners(window);
+// 设置localStorage
+localStorage.setItem('abcd', '1111');
+```

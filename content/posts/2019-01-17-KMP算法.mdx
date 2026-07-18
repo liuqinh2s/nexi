@@ -1,0 +1,238 @@
+---
+title: KMP算法
+slug: KMP算法
+date: '2019-01-17'
+description: >-
+  KMP 算法 KMP 算法用来在一个文本中查找模式串，如下图所示： 文本匹配例子： 我们把上面那个长字符串的称为 文本 ，下面这个短的称为 模式串
+  。我们的目的是查看 ABADABAD 是否出现在文本中。 不必要的比较： 跳过不必要的比较： KMP
+  算法的核心作用在于帮助模式串顺利的跳过很多不必要的比较（模式串没有任何前缀与文本匹配），直接后移到一部分前缀已
+tags:
+  - 算法
+categories: []
+format: markdown
+comments: true
+---
+## KMP 算法
+
+KMP 算法用来在一个文本中查找模式串，如下图所示：
+
+文本匹配例子：
+
+![](https://i.loli.net/2019/02/01/5c545a0ceea57.jpg#align=left&display=inline&height=78&linkTarget=_blank&originHeight=78&originWidth=392&width=392)
+
+我们把上面那个长字符串的称为**文本**，下面这个短的称为**模式串**。我们的目的是查看`ABADABAD`是否出现在文本中。
+
+不必要的比较：
+
+![](https://i.loli.net/2019/02/01/5c545a0d27686.jpg#align=left&display=inline&height=100&linkTarget=_blank&originHeight=100&originWidth=418&width=418)
+
+跳过不必要的比较：
+
+![](https://i.loli.net/2019/02/01/5c545a0cf058c.jpg#align=left&display=inline&height=90&linkTarget=_blank&originHeight=90&originWidth=410&width=410)
+
+KMP 算法的核心作用在于帮助模式串顺利的跳过很多不必要的比较（模式串没有任何前缀与文本匹配），直接后移到一部分前缀已经匹配的位置，开始下一次的比较。更准确的讲是移动到：最长真前后缀匹配的位置，如上图所示的`ABA`。
+
+<!--more-->
+
+### 什么是真前后缀
+
+前缀和后缀我们都不陌生，比如单词`ABA`，它有三个前缀：`A`、`AB`、`ABA`，和三个后缀：`A`、`BA`、`ABA`。
+
+真前后缀的意思是，前后缀必须是单词的**真子集**，也就是说不能是单词本身。所以上面那个单词`ABA`的真前缀是：`A`、`AB`，真后缀是：`A`、`BA`。
+
+那么单词`ABA`真前后缀的最长匹配是：`A`。
+
+#### 那么真前后缀是否匹配有什么用？
+
+我们仔细观察文章最开头的文本匹配例子。在不必要的比较中，我们拿`BADABA`和`ABADAB`比较。而这两个，前者是模式串`ABADABA`部分的后缀，后者则是前缀。如果我们算得了`ABADABA`的真前后缀的最长匹配，就已经知道了`BADABA`和`ABADAB`不相等。而且还知道`ADABA`和`ABADA`也不相等，等等。
+
+**只要我们知道了真前后缀的最长匹配是什么，我们可以直接跳过所有这些没必要的比较。**
+
+KMP 的核心就是：**在每一次失配的时候**，利用最长真前后缀匹配长度，直接跳过不必要的比较。
+
+### next 数组
+
+next 数组也就是：部分匹配表（Partial Match Table）。**就是一个最长真前后缀匹配长度表。**
+
+**首先 next 数组只需要用模式串得出，它是对模式串的解析，跟要匹配的文本没有半毛钱关系。**其次 next 数组记录的其实就是**最长真前后缀匹配长度**，但错开了一位。
+
+> 真前后缀的意思是，前后缀不能是字符串本身，只能是字符串的真子集
+
+|    i    |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |
+| :-----: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
+| 模式串  |  A  |  B  |  A  |  D  |  A  |  B  |  A  |  D  | \0  |
+| next[i] | -1  |  0  |  0  |  1  |  0  |  1  |  2  |  3  |  4  |
+
+1. i = 0，`next[0]`，我们填-1；
+1. i = 1，前面的字符串为`A`，其最长相同真前后缀长度为 0，即`next[1] = 0`；
+1. i = 2，前面的字符串为`AB`，其最长相同真前后缀长度为 0，即`next[2] = 0`；
+1. i = 3，前面的字符串为`ABA`，其最长相同真前后缀为`A`，即`next[3] = 1`；
+1. i = 4，前面的字符串为`ABAD`，其最长相同真前后缀长度为 0，即`next[4] = 0`；
+1. i = 5，前面的字符串为`ABADA`，其最长相同真前后缀长度为`A`，即`next[5] = 1`；
+1. i = 6，前面的字符串为`ABADAB`，其最长相同真前后缀长度为`AB`，即`next[6] = 2`；
+1. i = 7，前面的字符串为`ABADABA`，其最长相同真前后缀为`ABA`，即`next[7] = 3`；
+1. i = 8，前面的字符串为`ABADABAD`，其最长相同真前后缀为`ABAD`，即`next[8]=4`；
+
+这张 next 表极其有用，前面说了，在字符串匹配的每一次失配的时候，我们都可以用已经匹配上的这段字符串的最长真前后缀匹配长度来定位将要跳转的位置。还是拿最开始的文本匹配例子：
+
+当图一失配的时候，我们查`ABADABAD`的失配位置的 next 数组，也就是`next[7]`，得到`ABADABA`的最长真前后缀匹配长度`3`，然后拿`"ABADABAD".charAt(3)`也就是`D`跟文本中失配处的字符`' '`继续匹配。如果又失配，那么递归处理。递归的边界是什么？答案是`next[0]`。
+
+### 代码
+
+这个代码并不难写，我简单讲一下。
+
+首先我们需要构造 next 数组，需要的参数只有一个：模式串。
+
+然后我们使用一个指针**遍历模式串**，另一个指针负责**记录匹配深度**。
+
+> **生成 next 数组，也是一个匹配的过程**，遇到不匹配也要跳过不必要的比较，所以这实际上是一个递归的问题。
+
+分支只有两个，**匹配的时候**：i++，j++，next[i]=j。**不匹配的时候**，递归查找下一个必要的匹配：j=next[j]。
+
+```java
+private int[] getNextArray(String pattern){
+    int[] nextArray = new int[pattern.length()+1];
+    nextArray[0]=-1;
+    int i=0;
+    int j=-1;
+    while(i<pattern.length()){
+        if(j==-1 || pattern.charAt(i)==pattern.charAt(j)){
+            i++;
+            j++;
+            nextArray[i]=j;
+        }else{
+            j = nextArray[j];
+        }
+    }
+    return nextArray;
+}
+
+public int KMP(String text, String pattern){
+    int[] nextArray = getNextArray(pattern);
+    int i=0;
+    int j=0;
+    while(i<text.length() && j<pattern.length()){
+        if(j==-1 || text.charAt(i)==pattern.charAt(j)){
+            i++;
+            j++;
+        }else{
+            j = nextArray[j];
+        }
+    }
+    if(j==pattern.length()){
+        return i-j;
+    }
+    return -1;
+}
+```
+
+> 当然这种错开，和`next[0]=-1`的设定，不那么自然。其实可以有更自然的设计：
+
+|    i    |  0  |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |
+| :-----: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |
+| 模式串  |  A  |  B  |  A  |  D  |  A  |  B  |  A  |  D  | \0  |
+| next[i] |  0  |  0  |  1  |  0  |  1  |  2  |  3  |  4  |     |
+
+这样一一对应就行了，next 数组也与模式串等长。
+
+这种 next 表的代码如下：
+
+```java
+private int[] getNextArray(String pattern){
+    int[] nextArray = new int[pattern.length()];
+    int i=1;
+    int j=0;
+    while(i<pattern.length()){
+        while(j>0 && pattern.charAt(i)!=pattern.charAt(j)){
+            j = nextArray[j-1];
+        }
+        while(i<pattern.length() && pattern.charAt(i)==pattern.charAt(j)){
+            nextArray[i++] = ++j;
+        }
+        if(j==0){
+            nextArray[i++] = j;
+        }
+    }
+    return nextArray;
+}
+
+public int KMP(String text, String pattern){
+    int[] nextArray = getNextArray(pattern);
+    int i=0;
+    int j=0;
+    while(i<text.length() && j<pattern.length()){
+        while(j>0 && text.charAt(i)!=pattern.charAt(j)){
+            j = nextArray[j-1];
+        }
+        while(i<text.length() && j<pattern.length() && text.charAt(i)==pattern.charAt(j)){
+            i++;
+            j++;
+        }
+        if(j==0){
+            i++;
+        }
+    }
+    if(j==pattern.length()){
+        return i-j;
+    }
+    return -1;
+}
+```
+
+这段代码看起来远不如上面第一种 next 表的代码简洁清晰。下面做一个简化，去掉内部的循环：
+
+```java
+private int[] getNextArray(String pattern){
+    int[] nextArray = new int[pattern.length()];
+    int i=1;
+    int j=0;
+    while(i<pattern.length()){
+        if(j>0 && pattern.charAt(i)!=pattern.charAt(j)){
+            j = nextArray[j-1];
+        } else if(pattern.charAt(i)==pattern.charAt(j)){
+            nextArray[i++] = ++j;
+        } else if(j==0){
+            nextArray[i++] = j;
+        }
+    }
+    return nextArray;
+}
+
+public int KMP(String text, String pattern){
+    int[] nextArray = getNextArray(pattern);
+    int i=0;
+    int j=0;
+    while(i<text.length() && j<pattern.length()){
+        if(j>0 && text.charAt(i)!=pattern.charAt(j)){
+            j = nextArray[j-1];
+        } else if(text.charAt(i)==pattern.charAt(j)){
+            i++;
+            j++;
+        } else if(j==0){
+            i++;
+        }
+    }
+    if(j==pattern.length()){
+        return i-j;
+    }
+    return -1;
+}
+```
+
+看代码很容易知道，文本的指针是只增不减的，而且只在**失配且匹配深度大于 0**的时候递归处理失配情况。但如何精确分析算法复杂度呢？
+
+## 算法复杂度分析
+
+这个算法的分析属于平摊分析。引入一个变量 k，`k=2*i-j`。观察下面的代码：
+
+```java
+while(j<m && i<n){
+    if(0>j || T[i]==P[j]){
+        i++;j++;    // k加1
+    }else{
+        j = next[j];    // j至少减一，i不变，那么k至少加1
+    }
+}
+```
+
+由上述注释分析得出：k 单调递增。k 的最大值是`2*n+1`，而 k 是迭代次数的上界，所以算法最坏时间是：`2*n+1`，所以这是一个`O(n)`的算法。同理可得算出`next`表的时间复杂度是`O(m)`。所以总的算法复杂度是`O(m+n)`。

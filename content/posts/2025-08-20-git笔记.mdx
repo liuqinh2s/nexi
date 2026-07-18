@@ -1,0 +1,42 @@
+---
+title: git笔记
+slug: git笔记
+date: '2025-08-20'
+description: >-
+  git add 的意义是什么，为什么要设计出这个？ 答：git add 的意义是提交粒度的精细化控制。使用 git add p 可以精细到代码块。git
+  add 引入"暂存区"（Staging Area）概念 ​ Git 明确划分工作流阶段： 工作目录 ：开发者实时编辑和保存文件。 暂存区 ：通过 git
+  add 构建“待提交快照” 版本库 ：通过 git 
+tags:
+  - git
+categories: []
+format: markdown
+comments: true
+---
+# git add 的意义是什么，为什么要设计出这个？
+
+答：git add 的意义是提交粒度的精细化控制。使用 git add -p 可以精细到代码块。git add 引入"暂存区"（Staging Area）概念 ​
+
+Git 明确划分工作流阶段：
+
+- **工作目录**：开发者实时编辑和保存文件。
+- **暂存区**：通过 git add 构建“待提交快照”
+- **版本库**：通过 git commit 永久保存暂存区内容。
+
+的贷款八零顶顶顶
+
+优势：
+
+- 避免误提交未完成的代码
+- 支持多次 git add 逐步完善提交内容
+
+底层数据结构的准备：
+
+执行 git add 时，Git 会：
+
+1. 计算文件内容的 SHA-1 哈希值（唯一标识）
+2. 将文件内容存储为 Git 对象（Blob）
+3. 更新暂存区索引（.git/index），记录文件路径、哈希值和元数据
+
+提交时（git commit），Git 只需基于索引生成 Tree 和 Commit 对象，提升效率
+
+> 暂存区是 Git 区别于其他版本控制系统（如 SVN）的关键设计

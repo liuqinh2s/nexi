@@ -1,0 +1,62 @@
+---
+title: 知不知道最新的url参数获取的API？
+slug: 知不知道最新的url参数获取的API？
+date: '2022-07-26'
+description: >-
+  核心 API：URLSearchParams 现代浏览器原生支持的查询参数处理标准接口 基础使用示例： 动态修改参数： 参数遍历 结合 URL API
+  实现完整解析 注意事项 URLSearchParams 会使用 + 替代空格：
+tags:
+  - JavaScript API
+categories: []
+format: markdown
+comments: true
+---
+## 核心 API：URLSearchParams
+
+现代浏览器原生支持的查询参数处理标准接口
+
+基础使用示例：
+
+```JavaScript
+// 从当前URL获取参数
+const params = new URLSearchParams(window.location.search);
+// 获取单个参数值
+const name = params.get('name');    // 返回字符串或null
+// 获取重复参数的所有值（如 ?color=red&color=blue）
+const colors = params.getAll('color');  // 返回数组：["red", "blue"]
+```
+
+动态修改参数：
+
+```JavaScript
+params.set('page', '2');    // 更新参数，如果原先无此参数，则会新加，如果原来有多个值将删除其他所有值
+params.append('filter', 'new'); // 添加新值（不覆盖旧值）
+params.delete('old');   // 删除参数
+```
+
+参数遍历
+
+```JavaScript
+for(const [key, value] of params){  // 或params.entries()
+    console.log(key, value);
+}
+```
+
+## 结合 URL API 实现完整解析
+
+```JavaScript
+const url = new URL('https://example.com/path?name=John#section');
+console.log(url.pathname);  // 输出：/path
+console.log(url.searchParams.get('name'));  // 输出：John
+```
+
+## 注意事项
+
+URLSearchParams 会使用`+`替代空格：
+
+```JavaScript
+const query = new URLSearchParams({
+  lang: 'zh aa',
+  sort: 'desc'
+}).toString(); // 输出：lang=zh+aa&sort=desc
+```

@@ -1,0 +1,38 @@
+---
+title: 浏览器上的几种xy坐标
+slug: 浏览器上的几种xy坐标
+date: '2022-06-09'
+description: 首先分为两大类： 事件坐标 dom 坐标
+tags:
+  - 前端
+categories: []
+format: markdown
+comments: true
+---
+首先分为两大类：
+
+- 事件坐标
+- dom 坐标
+
+<!-- more -->
+
+## 事件坐标
+
+有如下几种：
+
+- [screenX](https://developer.mozilla.org/zh-CN/docs/Web/API/MouseEvent/screenX), screenY
+- [clientX](https://developer.mozilla.org/zh-CN/docs/Web/API/MouseEvent/clientX), clientY
+- [pageX](https://developer.mozilla.org/zh-CN/docs/Web/API/MouseEvent/pageX), pageY
+- [offsetX](https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/offsetX), offsetY
+
+下面这张图可以很好的对比展示这几种 xy 坐标：
+
+![image.png](https://s2.loli.net/2022/06/09/CgevqWi37jV6TwZ.png)
+
+那如果是在 iframe 中的 document，clientX 和 screenX 还是符合直觉的值吗？
+
+答案是 clientX 不是，screenX 是。
+
+clientX 的值是从 document 的左起始位置算起的，不会考虑 iframe 距离浏览器左边距。screenX 则依然是距离屏幕左边的距离。
+
+## dom 坐标

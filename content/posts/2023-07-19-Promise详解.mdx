@@ -1,0 +1,42 @@
+---
+title: Promise详解
+slug: Promise详解
+date: '2023-07-19'
+description: 官方文档 Promise A+ 规范 async 函数
+tags:
+  - JavaScript
+categories: []
+format: markdown
+comments: true
+---
+## 官方文档
+
+[Promise A+ 规范](https://promisesaplus.com/)
+[async 函数](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function)
+
+<!-- more -->
+
+# 常见问题
+
+1. 异步函数不一定就会异步执行，主要看里面有没有异步的地方，比如 setTimeout，比如 http 请求，比如 indexedDB 请求
+2. 函数返回 Promise 对象，不一定就要写 async，除非里面用了 await
+3. async 是 Promise 的等价简写，不必再多写一个`return new Promise`
+
+```javascript
+function resolveAfter2Seconds() {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve("resolved");
+    }, 2000);
+  });
+}
+
+async function asyncCall() {
+  console.log("calling");
+  const result = await resolveAfter2Seconds();
+  console.log(result);
+  // Expected output: "resolved"
+}
+
+asyncCall();
+```

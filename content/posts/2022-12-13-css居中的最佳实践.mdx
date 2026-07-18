@@ -1,0 +1,145 @@
+---
+title: css居中的最佳实践
+slug: css居中的最佳实践
+date: '2022-12-13'
+description: >-
+  居中是 css 中很重要的一个基础知识，主要分三个方向讨论： 1. 水平居中 or 垂直居中 2. 文本居中 or 容器居中（块级元素） 3. 设置父容器
+  or 设置自身 or 都需要设置
+tags:
+  - 前端
+  - css
+categories: []
+format: markdown
+comments: true
+---
+居中是 css 中很重要的一个基础知识，主要分三个方向讨论：
+
+1. 水平居中 or 垂直居中
+2. 文本居中 or 容器居中（块级元素）
+3. 设置父容器 or 设置自身 or 都需要设置
+
+<!-- more -->
+
+# 最佳实践
+
+最佳实践，都是通过给父容器设置样式，来使内容达到居中效果。这个设计哲学也是非常正确的，我们确实应该通过操作父容器来让其内容居中，居中并非是子元素需要考虑的事（因为子元素可能有多个，且其自身可能比较复杂）。
+
+## 文本居中
+
+### 水平居中
+
+文本水平居中使用`text-align: center;`：
+
+```css
+.center{
+    text-align: center;
+    border: 2px solid red;
+}
+<div class="center">我是文本</div>
+```
+
+这个非常好使，单行和多行文本都可以处理。
+
+[text-align 文档](https://developer.mozilla.org/en-US/docs/Web/CSS/text-align)
+
+### 垂直居中
+
+使用 line-height 可以调节文本的垂直间距，从而达到垂直居中的效果，不过如果是多行文本的话，需要知道行数，但大多数情况下都是不知道行数的，所以一般用于单行文本的垂直居中场景。
+
+实验地址：https://replit.com/@liuqinh2s1/cssTest3#src/App.css
+
+实际上多行文本垂直居中可以用跟容器居中一样的方法：flex 布局：
+
+- https://replit.com/@liuqinh2s1/css-center2#index.html
+
+> 同样的也适用于单行，甚至单行文本水平居中也可以用 flex 布局，但多行文本水平居中不可以用 flex 布局
+
+## 容器居中
+
+容器居中的最佳实践是 flex 布局。如果想看详细的教程，推荐这个：[Flex 布局教程：语法篇 - 阮一峰的网络日志](https://www.ruanyifeng.com/blog/2015/07/flex-grammar.html)
+
+实验地址：https://replit.com/@liuqinh2s1/css-center#index.html
+
+### 水平居中
+
+如果是水平排布的，设置`justify-content: center;`：
+
+```css
+.center {
+  display: flex;
+  justify-content: center;
+}
+<div class="center">
+    <div>a</div>
+    <div>b</div>
+</div>
+```
+
+如果是垂直排布的，设置`align-items: center;`：
+
+```css
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+<div class="center">
+    <div>a</div>
+    <div>b</div>
+</div>
+```
+
+### 垂直居中
+
+与上面水平居中的写法正好相反
+
+如果是水平排布的，设置`align-items: center;`：
+
+```css
+.center {
+  display: flex;
+  align-items: center;
+}
+<div class="center">
+    <div>a</div>
+    <div>b</div>
+</div>
+```
+
+如果是垂直排布的，设置`justify-content: center;`：
+
+```css
+.center {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+<div class="center">
+    <div>a</div>
+    <div>b</div>
+</div>
+```
+
+所以总结如下：除多行文本水平居中必须用`text-align: center;`外，其余情况，全部可以用 flex 布局解决。
+
+## 补充
+
+利用 position，50%和 transform 自身的一半高来达到居中：
+
+```css
+.parent{
+    height: 200px;
+    border: 2px solid red;
+    position: relative;
+}
+.child{
+    height: 100px;
+    border: 1px solid blue;
+    position: absolute;
+    top: 50%;
+    transform: translate(0, -50%);
+}
+<div class="parent">
+    <div class="child">1</div>
+</div>
+```

@@ -1,0 +1,65 @@
+---
+title: "二分查找"
+slug: "二分查找"
+date: "2022-06-08"
+description: "二分查找的区间定义、边界收缩原则，以及左闭右闭和左闭右开两种实现。"
+tags: ["算法"]
+categories: ["算法学习"]
+---
+
+什么是二分查找：每次只查询数组最中间的数。如果没有找到目标，就根据中间值和目标值的比较缩小区间，只搜索左半区间或右半区间。
+
+二分查找的前提：**数据有序**。
+
+二分查找结束的条件：查找区间为空，或者找到元素。
+
+<!-- more -->
+
+# 搜索区间
+
+常见的搜索区间表示形式有两种：
+
+1. 左闭右开，区间为空的条件是 `left === right`。
+2. 左闭右闭，区间为空的条件是 `left > right`。
+
+二分查找有时会写出死循环。最重要的原则是：**每次收缩边界时都要排除已经检查过的 mid，避免它被重复查询。**
+
+# 左闭右闭写法
+
+```js title="binary-search-closed.js"
+function search(nums, target) {
+  let left = 0;
+  let right = nums.length - 1;
+
+  while (left <= right) {
+    const mid = left + Math.floor((right - left) / 2);
+    if (nums[mid] === target) return mid;
+    if (nums[mid] > target) right = mid - 1;
+    if (nums[mid] < target) left = mid + 1;
+  }
+
+  return -1;
+}
+```
+
+# 左闭右开写法
+
+```js title="binary-search-open.js"
+function search(nums, target) {
+  let left = 0;
+  let right = nums.length;
+
+  while (left < right) {
+    const mid = left + Math.floor((right - left) / 2);
+    if (nums[mid] === target) return mid;
+    if (nums[mid] > target) right = mid;
+    if (nums[mid] < target) left = mid + 1;
+  }
+
+  return -1;
+}
+```
+
+# 查找左右边界
+
+查找第一个或最后一个目标值时，找到目标后不能直接返回，而是继续向一侧收缩。左边界让 `right = mid`，右边界让 `left = mid + 1`，最后再检查边界位置是否真的是目标值。

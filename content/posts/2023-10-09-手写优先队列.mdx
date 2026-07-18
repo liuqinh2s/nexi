@@ -1,0 +1,225 @@
+---
+title: 手写优先队列
+slug: 手写优先队列
+date: '2023-10-09'
+description: >-
+  优先队列一般是用堆来实现的，查询复杂度是 O(1)，插入和删除的复杂度是 O(logN)。堆结构就是一个完全二叉树，完全二叉树可以用数组实现。
+  测试场景：215. 数组中的第 K 个最大元素
+tags:
+  - 算法
+categories: []
+format: markdown
+comments: true
+---
+优先队列一般是用堆来实现的，查询复杂度是 O(1)，插入和删除的复杂度是 O(logN)。堆结构就是一个完全二叉树，完全二叉树可以用数组实现。
+
+测试场景：[215. 数组中的第 K 个最大元素](https://leetcode.cn/problems/kth-largest-element-in-an-array/description/)
+
+<!-- more -->
+
+```typescript
+class PriorityQueue1<T> {
+  arr: T[];
+  compare: (a: T, b: T) => number;
+  constructor(props: { compare: (a: T, b: T) => number }) {
+    const { compare } = props;
+    this.compare = compare;
+    this.arr = [];
+  }
+  swap(arr, index1, index2) {
+    const temp = arr[index1];
+    arr[index1] = arr[index2];
+    arr[index2] = temp;
+  }
+  enqueue(a) {
+    this.arr.push(a);
+    this.bubbleUp(this.arr.length - 1);
+  }
+  dequeue() {
+    this.delete(0);
+  }
+  bubbleUp(index) {
+    if (this.arr.length <= 1 || index <= 0) {
+      return;
+    }
+    const pre = Math.floor((index - 1) / 2);
+    if (this.compare(this.arr[index], this.arr[pre]) > 0) {
+      this.swap(this.arr, pre, index);
+      this.bubbleUp(pre);
+    }
+  }
+  delete(index) {
+    this.swap(this.arr, index, this.arr.length - 1);
+    this.arr.pop();
+    this.sinkDown(index);
+  }
+  sinkDown(index) {
+    if (this.arr.length <= 1 || index >= this.arr.length - 1) {
+      return;
+    }
+    if (
+      (index * 2 + 1 < this.arr.length &&
+        this.compare(this.arr[index], this.arr[index * 2 + 1]) < 0) ||
+      (index * 2 + 2 < this.arr.length &&
+        this.compare(this.arr[index], this.arr[index * 2 + 2]) < 0)
+    ) {
+      if (
+        index * 2 + 2 >= this.arr.length ||
+        this.compare(this.arr[index * 2 + 1], this.arr[index * 2 + 2]) > 0
+      ) {
+        this.swap(this.arr, index, index * 2 + 1);
+        this.sinkDown(index * 2 + 1);
+      } else {
+        this.swap(this.arr, index, index * 2 + 2);
+        this.sinkDown(index * 2 + 2);
+      }
+    }
+  }
+  front() {
+    return this.arr[0];
+  }
+  size() {
+    return this.arr.length;
+  }
+}
+
+function findKthLargest(nums: number[], k: number): number {
+  // PriorityQueue1
+  const pq = new PriorityQueue1({ compare: (a: number, b: number) => a - b });
+  for (let i = 0; i < nums.length; i++) {
+    pq.enqueue(nums[i]);
+  }
+  for (let i = k - 1; i >= 1; i--) {
+    pq.dequeue();
+  }
+  return pq.front();
+}
+```
+
+测试场景 2：[2034. 股票价格波动](https://leetcode.cn/problems/stock-price-fluctuation/description/)
+
+```typescript
+class PriorityQueue1<T> {
+  arr: T[];
+  compare: (a: T, b: T) => number;
+  constructor(props: { compare: (a: T, b: T) => number }) {
+    const { compare } = props;
+    this.compare = compare;
+    this.arr = [];
+  }
+  swap(arr, index1, index2) {
+    const temp = arr[index1];
+    arr[index1] = arr[index2];
+    arr[index2] = temp;
+  }
+  enqueue(a) {
+    this.arr.push(a);
+    this.bubbleUp(this.arr.length - 1);
+  }
+  dequeue() {
+    this.delete(0);
+  }
+  bubbleUp(index) {
+    if (this.arr.length <= 1 || index <= 0) {
+      return;
+    }
+    const pre = Math.floor((index - 1) / 2);
+    if (this.compare(this.arr[index], this.arr[pre]) > 0) {
+      this.swap(this.arr, pre, index);
+      this.bubbleUp(pre);
+    }
+  }
+  delete(index) {
+    this.swap(this.arr, index, this.arr.length - 1);
+    this.arr.pop();
+    this.sinkDown(index);
+  }
+  sinkDown(index) {
+    if (this.arr.length <= 1 || index >= this.arr.length - 1) {
+      return;
+    }
+    if (
+      (index * 2 + 1 < this.arr.length &&
+        this.compare(this.arr[index], this.arr[index * 2 + 1]) < 0) ||
+      (index * 2 + 2 < this.arr.length &&
+        this.compare(this.arr[index], this.arr[index * 2 + 2]) < 0)
+    ) {
+      if (
+        index * 2 + 2 >= this.arr.length ||
+        this.compare(this.arr[index * 2 + 1], this.arr[index * 2 + 2]) > 0
+      ) {
+        this.swap(this.arr, index, index * 2 + 1);
+        this.sinkDown(index * 2 + 1);
+      } else {
+        this.swap(this.arr, index, index * 2 + 2);
+        this.sinkDown(index * 2 + 2);
+      }
+    }
+  }
+  front() {
+    return this.arr[0];
+  }
+  size() {
+    return this.arr.length;
+  }
+}
+
+interface Data {
+  index: number;
+  value: number;
+}
+
+class StockPrice {
+  priceArr: number[];
+  maxPriorityQueue: PriorityQueue1<{ index: number; value: number }>;
+  minPriorityQueue: PriorityQueue1<{ index: number; value: number }>;
+  constructor() {
+    this.priceArr = [];
+    this.maxPriorityQueue = new PriorityQueue1({
+      compare: (a: Data, b: Data) => a.value - b.value,
+    });
+    this.minPriorityQueue = new PriorityQueue1({
+      compare: (a: Data, b: Data) => b.value - a.value,
+    });
+  }
+
+  update(timestamp: number, price: number): void {
+    this.priceArr[timestamp] = price;
+    this.maxPriorityQueue.enqueue({ index: timestamp, value: price });
+    this.minPriorityQueue.enqueue({ index: timestamp, value: price });
+  }
+
+  current(): number {
+    return this.priceArr[this.priceArr.length - 1];
+  }
+
+  maximum(): number {
+    while (
+      this.maxPriorityQueue.front().value !==
+      this.priceArr[this.maxPriorityQueue.front().index]
+    ) {
+      this.maxPriorityQueue.dequeue();
+    }
+    return this.maxPriorityQueue.front().value;
+  }
+
+  minimum(): number {
+    while (
+      this.minPriorityQueue.front().value !==
+      this.priceArr[this.minPriorityQueue.front().index]
+    ) {
+      this.minPriorityQueue.dequeue();
+    }
+    return this.minPriorityQueue.front().value;
+  }
+}
+
+/**
+ * Your StockPrice object will be instantiated and called as such:
+ * var obj = new StockPrice()
+ * obj.update(timestamp,price)
+ * var param_2 = obj.current()
+ * var param_3 = obj.maximum()
+ * var param_4 = obj.minimum()
+ */
+```

@@ -1,0 +1,56 @@
+---
+title: Figma笔记
+slug: Figma笔记
+date: '2025-08-22'
+description: >-
+  早就听闻 Figma 市值非常高（大概好几年前吧），把 Adobe PhotoShop 都给干下去了。以前只是听闻 Figma 用起来比 PhotoShop
+  更简单所以才深受用户喜爱，现在感觉事情并没有那么简单，Figma
+  市值之所以那么高肯定是有原因的，原因应该是盈利确实很好，市占率确实很高，因为我发现它好像是专门做 UI 设计的工具，而随便一想就知道这块
+tags:
+  - UI设计
+categories: []
+format: markdown
+comments: true
+---
+早就听闻 Figma 市值非常高（大概好几年前吧），把 Adobe PhotoShop 都给干下去了。以前只是听闻 Figma 用起来比 PhotoShop 更简单所以才深受用户喜爱，现在感觉事情并没有那么简单，Figma 市值之所以那么高肯定是有原因的，原因应该是盈利确实很好，市占率确实很高，因为我发现它好像是专门做 UI 设计的工具，而随便一想就知道这块蛋糕在现在这个时代是特别大的。
+
+我的东家也是做白板类项目的，不过也是做垂直领域，EDA，项目地址在此：[嘉立创 EDA 专业版](https://pro.lceda.cn/editor)。我所了解的其他白板项目有这些：
+
+- [Excalidraw](https://excalidraw.com/)
+- [paint-board](https://songlh.top/paint-board/)，[LHRUN/paint-board: 🎨 A powerful multi-end drawing board that brings together a lot of creative brushes to experience a whole new range of drawing effects!](https://github.com/LHRUN/paint-board?tab=readme-ov-file)
+- [yft-design](https://yft.design/)
+- [pointless](https://github.com/kkoomen/pointless)
+
+可见能结合具体业务，垂直发展，才是白板项目能否壮大的关键。而具体业务也有大有小，UI 设计，海报设计这些用户面大所以相应的市值也非常高。
+
+<!-- more -->
+
+# 常见的使用技巧
+
+因为我自己就是开发白板工具软件的，平常或多或少都使用过这类工具。比如我最喜欢的：鼠标右键拖拽画布，用起来那是一个爽啊。
+
+还有比如这类工具的布局都出奇的相似，我们 EDA 也是左边放画布元素树状结构，常用库，右边放画布元素属性面板。Figma 也是如此。
+
+一般来说都可以通过左侧树定位画布元素（使某个画布元素高亮居中显示），Figma 的用法如下：
+
+1. 通过左侧图层面板双击定位 ​​
+   1. 打开左侧图层面板（快捷键 Alt+1 或点击面板图标）。
+   2. 找到目标元素的图层名称，​​ 双击其名称前的图层图标 ​​（如矩形、组、Frame 等小图标）
+2. ​​ 使用快捷键居中选中元素 ​​
+   1. 在左侧图层面板中单击选中目标图层。
+   2. 按下快捷键 ​​Shift + 2​​，画布会立即将选中元素居中显示
+
+## 快速拖拽画布
+
+Figma 不支持鼠标右键拖拽画布，唯一比较方便的拖拽画布的方式是按住空格，鼠标左键拖拽
+
+## 遇到的一些问题
+
+### 修改文本
+
+发现一个问题，如果在画布上选中一个文本节点，然后在左侧树修改名称，画布上的文本并没有变化，问了 AI，AI 说可能是 BUG，但刷新后依旧没有变化。
+我猜测，可能左侧节点只是节点的名字而已。然后右侧属性面板也没有找到修改文本内容的地方。看来只能在画布上双击修改了，而且双击修改也不会弹个修改弹框之类的。与我司做的 EDA 工具相比，体验差了一点。
+
+### 使用图标
+
+常见的网站一般都有亮色和暗色两套主题，而且是用月亮和太阳这样的图标去切换。找图标可以通过 Figma 的插件来完成，在 Figma 的顶部菜单的 Plugins 里面，安装 Iconify Icons Library，然后搜索 sun 或者 moon 就可以找到啦。

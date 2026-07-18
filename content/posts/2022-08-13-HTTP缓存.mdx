@@ -1,0 +1,135 @@
+---
+title: HTTP缓存
+slug: HTTP缓存
+date: '2022-08-13'
+description: >-
+  参考 https://github.com/amandakelake/blog/issues/41 概述 基本原理 浏览器在请求资源的时候，根据请求头的
+  expires 和 cache control 判断是否命中强缓存，是则直接从缓存读取资源，不会发请求到服务器。
+  如果没有命中强缓存，浏览器一定会发送一个请求到服务器，通过 last modified 和 
+tags:
+  - 计算机网络
+categories: []
+format: markdown
+comments: true
+---
+# 参考
+
+https://github.com/amandakelake/blog/issues/41
+
+# 概述
+
+## 基本原理
+
+浏览器在请求资源的时候，根据请求头的 expires 和 cache-control 判断是否命中强缓存，是则直接从缓存读取资源，不会发请求到服务器。
+
+如果没有命中强缓存，浏览器一定会发送一个请求到服务器，通过 last-modified 和 etag 验证资源是否命中协商缓存，如果命中，服务器会将这个请求返回，但是不会返回这个资源的数据，依然是从缓存中读取资源。
+
+如果前面两者都没命中，直接从服务器加载资源。
+
+## 相同点
+
+如果命中，都是从客户端缓存中加载资源，而不是从服务器加载资源数据。
+
+## 不同点
+
+强缓存不发请求到服务器，协商缓存会发请求到服务器。
+
+# 强缓存
+
+强缓存通过 Expires 和 Cache-Control 两种响应头实现
+
+## Expires
+
+Expires 是 Http1.0 提出的一个表示资源过期时间的 header，它描述的是一个绝对时间，由服务器返回。
+
+Expires 受限于本地时间，如果修改了本地时间，可能会造成缓存失效。
+
+```JavaScript
+Expires: Wed, 11 May 2018 07:20:00 GMT
+```
+
+## Cache-Control
+
+Cache-Control 出现于 HTTP/1.1，优先级高于 Expires，表示的是相对时间
+
+```JavaScript
+Cache-Control: max-age=315360000
+```
+
+`max-age`再结合客户端接收到响应的客户端系统时间，就可以算出实际的客户端过期时间。哪怕一开始时间不准也没关系。比`Expires`这种绝对时间要好一点
+
+Cache-Control: no-cache 不会缓存数据到本地的说法是错的，详情《HTTP 权威指南》P182
+
+![](https://secure2.wostatic.cn/static/wum3ZUmQc9DarWutUZot7x/image.png?auth_key=1754534532-qVbQqnmsppnejEwk2TxKtE-0-aa32ea74f2d1bb7905d02cf2d65c10fc)
+
+Cache-Control: no-store 才是真正的不缓存数据到本地
+
+Cache-Control: public 可以被所有用户缓存（多用户共享），包括终端和 CDN 等中间代理服务器
+
+Cache-Control: private 只能被终端浏览器缓存（而且是私有缓存），不允许中继缓存服务器进行缓存
+
+![](https://secure2.wostatic.cn/static/smgmHVhU3e8rvNgANy1Jqy/image.png?auth_key=1754534532-rrXomnWU55j4FF1LwXcCpy-0-7492f51de37b531c582b2a938ffe0018)
+
+# 协商缓存
+
+当浏览器对某个资源的请求没有命中强缓存，就会发一个请求到服务器，验证协商缓存是否命中，如果协商缓存命中，请求响应返回的 http 状态为 304 并且会显示一个 Not Modified 的字符串。
+
+协商缓存是利用的是【Last-Modified, If-Modified-Since】和【ETag、If-None-Match】这两对 Header 来管理的
+
+## Last-Modified, If-Modified-Since
+
+Last-Modified 表示本地文件最后修改日期，浏览器会在 request header 加上 If-Modified-Since(上次返回的 Last-Modified 的值)，询问服务器在该日期后资源是否有更新，有更新的话就会将新的资源发送回来
+
+但是如果在本地打开缓存文件，就会造成 Last-Modified 被修改，所以在 HTTP/1.1 出现了 ETag
+
+## ETag、If-None-Match
+
+ETag 就像一个指纹，资源变化都会导致 ETag 变化，跟最后修改时间没关系，ETag 可以保证每一个资源是唯一的
+
+If-None-Match 的 header 会将上次返回的 ETag 发送给服务器，询问该资源的 ETag 是否有更新，有变动就会发送新的资源回来
+
+![](https://secure2.wostatic.cn/static/evDetmt9UjV41T9EyquRLY/image.png?auth_key=1754534532-sLYf5VbRUDuTCurH32X6Fj-0-0b4cd1a5eff0683ebf93266aac16ec83)
+
+ETag 的优先级比 Last-Modified 更高
+
+具体为什么要用 ETag，主要出于以下几种情况的考虑：
+
+- 一些文件会周期性的更改，但它的内容并不改变（只改变修改时间），这个时候我们并不希望客户端认为这个文件被修改了，而重新 GET
+- 某些文件修改非常频繁，比如在秒以下的时间内进行修改（比方说 1s 内修改了 N 次），If-Modified-Since 能检查到的粒度是秒级的，这种修改无法判断（UNIX 记录 MTIME 只能精确到秒）
+- 某些服务器不能精确的得到文件的最后修改时间。
+
+# 整体流程图
+
+![](https://secure2.wostatic.cn/static/ss7rNkuYjxNQspYC95gxV7/image.png?auth_key=1754534532-d1BjfYQ7DMJ8LyQzzNiK7W-0-31a84997fb561ae6562cce16b2186b4f)
+
+# 几种状态码的区别
+
+- 200：强缓存 Expires/Cache-Control 失效时，返回新的资源文件
+- 200（from cache）：强缓存 Expires/Cache-Control 都存在，未过期，Cache-Control 优先于 Expires 时，浏览器从本地获取资源成功
+- 304（Not Modified）：协商缓存 Last-Modified/ETag 没有过期时，服务器返回状态码 304
+
+但是！但是！
+
+现在的 200（from cache）已经变成了 from disk cache（磁盘缓存）和 from memory cache（内存缓存）两种，打开 chrome 控制台看一下网络请求就知道了
+
+![](https://secure2.wostatic.cn/static/pqNpWmXPiey42tY2QvoBhT/image.png?auth_key=1754534532-e8G847N18NiFRoLSvuiFwu-0-189125b95f5d729c40d6e6a4037d86ec)
+
+具体两者的区别，暂时没有去深究，有兴趣的同学可以自己去研究
+
+# 如何选择合适的缓存
+
+大致的顺序
+
+- Cache-Control，请求服务器之前
+- Expires，请求服务器之前
+- If-None-Match（ETag），请求服务器
+- If-Modified-Sine（Last-Modified），请求服务器
+
+协商缓存需要配合强缓存使用，如果不启用强缓存的话，协商缓存根本没有意义。
+
+大部分 web 服务器都默认开启协商缓存，而且是同时启用【Last-Modified，If-Modified-Since】和【ETag，If-None-Match】
+
+但是下面的场景需要注意：
+
+- 分布式系统里多台机器间文件的 Last-Modified 必须保持一致，以免负载均衡到不同机器导致比对失败
+- 分布式系统应尽量关闭掉 ETag（每台机器生成的 ETag 都会不一样）

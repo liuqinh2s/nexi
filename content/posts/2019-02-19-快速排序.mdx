@@ -1,0 +1,92 @@
+---
+title: 快速排序
+slug: 快速排序
+date: '2019-02-19'
+description: >-
+  快速排序算法是一个原理非常简单易懂的算法，但如果现场手写的话又有多少人能写得出来呢？我今天又试了一下，发现还是存在一些认知上的问题。首先我明白快排的核心操作是：
+  选取一个中枢，然后把小于中枢的放到左边，大于中枢的放到右边
+  。但我发现时隔仅仅一年多，我居然已经忘了这个操作的英文名字了。直到我在写这篇文章的时候才突然想起来：partition 操作。 在使用 p
+tags:
+  - 算法
+categories: []
+format: markdown
+comments: true
+---
+快速排序算法是一个原理非常简单易懂的算法，但如果现场手写的话又有多少人能写得出来呢？我今天又试了一下，发现还是存在一些认知上的问题。首先我明白快排的核心操作是：**选取一个中枢，然后把小于中枢的放到左边，大于中枢的放到右边**。但我发现时隔仅仅一年多，我居然已经忘了这个操作的英文名字了。直到我在写这篇文章的时候才突然想起来：partition 操作。
+
+在使用 partition 操作的前提下，递归解决问题就 OK 了。
+
+<!--more-->
+
+partition 具体操作如下：
+
+我选取的中枢是第一个元素，且从前往后遍历数组。遇到小于中枢的，我要交换当前结点和中枢。遇到大于中枢的，直接略过。
+
+第一个分支也就是遇到小于中枢的结点，这里才是操作比较复杂的部分，仔细想想其实这里要交换两次。将小于中枢的结点与中枢交换之后，中枢跑到了最后面，此时的结构相当于：`小小小..大大大..中枢`。**我们还要将中枢塞到中间去**。
+
+```java
+public void qsort(int[] array, int begin, int end){
+    if(begin>=end-1){
+        return;
+    }
+    int pivotIndex = partition(array, begin, end);
+    qsort(array, begin, pivotIndex);
+    qsort(array, pivotIndex+1, end);
+}
+
+private int partition(int[] array, int begin, int end){
+    int pivot = array[begin];
+    int pivotIndex = begin;
+    int index = begin+1;
+    while(index<end){
+        if(array[index]<pivot){
+            int temp = array[index];
+            array[index] = array[pivotIndex];
+            array[pivotIndex++] = temp;
+            temp = array[index];
+            array[index] = array[pivotIndex];
+            array[pivotIndex] = temp;
+        }
+        index++;
+    }
+    return pivotIndex;
+}
+```
+
+还可以思考一下：
+
+- 选第一个元素做中枢，从后往前遍历
+- 选最后一个元素做中枢，从前往后遍历
+- 选最后一个元素做中枢，从后往前遍历
+
+所以最后我发现快速排序确实是一个简单易懂的算法，难点在于 partition 操作的具体问题具体分析。四类 partition 全部写一遍。应该差不多了。
+
+上面的方法归根结底都是使用 **一个中枢** 来划分，实际上也可以用两个指针来划分：一个记录小部的末尾，一个记录大部的首部。这两个指针一个从前往后，一个从后往前，直到相遇，本轮划分操作就结束。
+
+于是我又抽空写了一下这个两个指针往中间靠的，结果并没有一遍写对，原因是边界检查，居然要不停的检查：
+
+```java
+private int partition1(int[] array, int begin, int end){
+    int pivot = array[begin];
+    int smallEnd = begin;
+    int bigBegin = end-1;
+    while(smallEnd<bigBegin){
+        while (smallEnd<bigBegin && array[bigBegin]>pivot){
+            bigBegin--;
+        }
+        if(smallEnd<bigBegin){
+            array[smallEnd++] = array[bigBegin];
+        }
+        while(smallEnd<bigBegin && array[smallEnd]<pivot){
+            smallEnd++;
+        }
+        if(smallEnd<bigBegin){
+            array[bigBegin--] = array[smallEnd];
+        }
+    }
+    array[smallEnd] = pivot;
+    return smallEnd;
+}
+```
+
+这样感觉就太不美了。
