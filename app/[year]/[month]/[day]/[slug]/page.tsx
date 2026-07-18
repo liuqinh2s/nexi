@@ -15,7 +15,7 @@ type RouteParams = { year: string; month: string; day: string; slug: string };
 export function generateStaticParams() {
   return getAllPosts().map((post) => {
     const [year, month, day] = post.date.split("-");
-    return { year, month, day, slug: encodeURIComponent(post.slug) };
+    return { year, month, day, slug: post.slug };
   });
 }
 
