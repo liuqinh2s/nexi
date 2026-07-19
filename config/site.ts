@@ -1,6 +1,6 @@
 export const siteConfig = {
   title: "liuqinh2s' blog",
-  shortTitle: "狼胆",
+  shortTitle: "刘钦",
   subtitle: "Do something cool!",
   description: "Computer Science is not a magic. To be a hacker.",
   author: {
@@ -10,6 +10,11 @@ export const siteConfig = {
   },
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://liuqinh2s.github.io",
   basePath: process.env.NEXT_PUBLIC_BASE_PATH ?? "",
+  editor: {
+    owner: "liuqinh2s",
+    repo: "nexi",
+    branch: "main",
+  },
   postsPerPage: 3,
   since: "2017-01-01",
   background:

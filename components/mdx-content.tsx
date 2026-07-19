@@ -1,17 +1,16 @@
 import type { AnchorHTMLAttributes, ComponentProps, ImgHTMLAttributes } from "react";
 import { compileMDX } from "next-mdx-remote/rsc";
-import { MarkdownAsync } from "react-markdown";
 import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypeKatex from "rehype-katex";
 import rehypePrettyCode from "rehype-pretty-code";
-import rehypeRaw from "rehype-raw";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import type { Pluggable } from "unified";
 import { ArticleInteractions } from "@/components/article-interactions";
-import { CodeBlock } from "@/components/code-block";
+import { ExtendedMarkdown, MarkdownAlert, SpecialCodeBlock } from "@/components/extended-markdown";
 import { siteConfig } from "@/config/site";
+import { normalizeMarkdownSource } from "@/lib/markdown-extensions";
 
 function ArticleLink(props: AnchorHTMLAttributes<HTMLAnchorElement>) {
   const external = typeof props.href === "string" && /^https?:\/\//.test(props.href);
@@ -44,32 +43,21 @@ export async function MdxContent({
   format?: "mdx" | "markdown";
 }) {
   if (format === "markdown") {
-    const content = await MarkdownAsync({
-      children: source,
-      components: {
-        a: ArticleLink,
-        img: ArticleImage,
-        iframe: LegacyIframe,
-        pre: CodeBlock,
-        script: () => null,
-        style: () => null,
-      },
-      rehypePlugins: [rehypeRaw, ...rehypePlugins],
-      remarkPlugins: [remarkGfm, remarkMath],
-    });
     return (
       <ArticleInteractions>
-        <div className="article-body">{content}</div>
+        <div className="article-body"><ExtendedMarkdown source={source} /></div>
       </ArticleInteractions>
     );
   }
 
   const { content } = await compileMDX({
-    source,
+    source: normalizeMarkdownSource(source),
     components: {
       a: ArticleLink,
+      blockquote: MarkdownAlert,
       img: ArticleImage,
-      pre: CodeBlock,
+      iframe: LegacyIframe,
+      pre: SpecialCodeBlock,
     },
     options: {
       mdxOptions: {

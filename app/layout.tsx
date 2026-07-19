@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import "katex/dist/katex.min.css";
+import "highlight.js/styles/github-dark.css";
 import "./globals.css";
 import { Analytics } from "@/components/analytics";
 import { siteConfig } from "@/config/site";
