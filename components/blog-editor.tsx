@@ -183,6 +183,10 @@ export function BlogEditor() {
 
   useEffect(() => {
     const saved = localStorage.getItem(TOKEN_KEY) ?? "";
+    if (saved && !saved.startsWith("ghp_")) {
+      localStorage.removeItem(TOKEN_KEY);
+      return;
+    }
     setToken(saved);
     setTokenDraft(saved);
     if (saved) void verifyToken(saved, false);
@@ -224,6 +228,10 @@ export function BlogEditor() {
 
   async function verifyToken(value = tokenDraft, save = true) {
     if (!value.trim()) { setNotice("请填写 GitHub Token"); return false; }
+    if (!value.trim().startsWith("ghp_")) {
+      setNotice("请使用以 ghp_ 开头的 GitHub Classic Token");
+      return false;
+    }
     setBusy(true);
     try {
       const response = await githubFetch("/user", undefined, value.trim());
@@ -508,8 +516,8 @@ export function BlogEditor() {
           <button aria-label="关闭" className="modal-close" onClick={() => setShowToken(false)} type="button"><X size={18} /></button>
           <KeyRound size={25} /><h2>连接 GitHub</h2>
           <p>Token 只保存在当前浏览器的 localStorage 中，不会发送到博客服务器。</p>
-          <label>Personal access token<input onChange={(event) => setTokenDraft(event.target.value)} placeholder="github_pat_…" type="password" value={tokenDraft} /></label>
-          <small>Fine-grained Token 需要授予 <strong>{editor.owner}/{editor.repo}</strong> 的 Contents 读写权限。</small>
+          <label>Classic personal access token<input autoComplete="off" onChange={(event) => setTokenDraft(event.target.value)} placeholder="ghp_…" type="password" value={tokenDraft} /></label>
+          <small>创建 Classic Token 时请勾选 <strong>repo</strong> 权限。请求将使用 <code>Authorization: Bearer ghp_…</code>，Token 仅保存在当前浏览器。</small>
           <button className="publish-button modal-submit" disabled={busy} onClick={() => void verifyToken()} type="button">{busy ? <LoaderCircle className="spin" size={16} /> : <Github size={16} />} 验证并保存</button>
         </section>
       </div>}

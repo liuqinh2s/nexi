@@ -13,7 +13,7 @@ Open `http://localhost:3000`.
 
 ## Write a post
 
-Open `/write/` to create or edit posts and navigation pages in the browser. The editor supports Markdown/MDX import, live preview, loading existing repository content, and publishing through the GitHub Contents API. A verified GitHub token is stored only in the current browser's `localStorage`; use a fine-grained token with Contents read/write access to this repository.
+Open `/write/` to create or edit posts and navigation pages in the browser. The editor supports Markdown/MDX import, live preview, loading existing repository content, and publishing through the GitHub Contents API. A verified GitHub Classic personal access token (`ghp_...`) is stored only in the current browser's `localStorage`; enable its `repo` scope for repository content writes.
 
 Create an `.md` or `.mdx` file in `content/posts`. The filename can keep the Hexo-style date prefix:
 
