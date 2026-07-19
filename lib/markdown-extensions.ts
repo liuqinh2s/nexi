@@ -15,8 +15,8 @@ export function normalizeMarkdownSource(source: string) {
     .replace(/\\\[([\s\S]*?)\\\]/g, (_, formula) => `$$${formula}$$`)
     .replace(/\\\((.+?)\\\)/g, (_, formula) => `$${formula}$`)
     .replace(/\[([^\]\n]+)\](?:\^\(([^)\n]+)\)|\{([^}\n]+)\})/g, (_, text, rtA, rtB) => `<ruby>${text}<rp>（</rp><rt>${rtA || rtB}</rt><rp>）</rp></ruby>`)
-    .replace(/==([^=\n]+)==/g, "<mark>$1</mark>")
-    .replace(/\+\+([^+\n]+)\+\+/g, "<u>$1</u>")
+    .replace(/(^|[\s([{（【“‘])==([^=\n]+?)==(?=$|[\s)\]}）】”’.,!?;:，。！？；：])/g, "$1<mark>$2</mark>")
+    .replace(/(^|[\s([{（【“‘])\+\+([^+\n]+?)\+\+(?=$|[\s)\]}）】”’.,!?;:，。！？；：])/g, "$1<u>$2</u>")
     .replace(/(^|[^~])~([^~\n]+)~(?!~)/g, "$1<span class=\"text-wavy\">$2</span>"));
 
   return normalized;
